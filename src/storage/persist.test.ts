@@ -43,6 +43,8 @@ describe('Persistence', () => {
     expect(loadGame(store)).toBeNull();
     store.setItem(SAVE_KEY, JSON.stringify({ version: 99 }));
     expect(loadGame(store)).toBeNull();
+    store.setItem(SAVE_KEY, JSON.stringify({ version: 1 })); // saved before the start squares moved
+    expect(loadGame(store)).toBeNull();
     saveGame(roll(scenario({ rules: { diceMode: 'one' }, men: { red: [1] } }), 6), store);
     expect(loadGame(store)?.turn.phase).toBe('move');
     clearGame(store);

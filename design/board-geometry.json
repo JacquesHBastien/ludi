@@ -541,7 +541,7 @@
     5,
     5
    ],
-   "startIndex": 0,
+   "startIndex": 1,
    "lastTrackIndex": 47,
    "homeLane": [
     [
@@ -584,7 +584,7 @@
     5,
     5
    ],
-   "startIndex": 12,
+   "startIndex": 13,
    "lastTrackIndex": 11,
    "homeLane": [
     [
@@ -627,7 +627,7 @@
     5,
     5
    ],
-   "startIndex": 24,
+   "startIndex": 25,
    "lastTrackIndex": 23,
    "homeLane": [
     [
@@ -670,7 +670,7 @@
     5,
     5
    ],
-   "startIndex": 36,
+   "startIndex": 37,
    "lastTrackIndex": 35,
    "homeLane": [
     [
@@ -719,5 +719,5 @@
   "green",
   "black"
  ],
- "homeLaneRule": "Confirmed: the crossing bar (lastTrackIndex) is a normal track square for everyone and the last square where that player's man can be killed. The man then turns into homeLane."
+ "homeLaneRule": "Confirmed: the crossing bar (lastTrackIndex) is a normal track square for everyone and the last square where that player's man can be killed. The man then turns into homeLane. Confirmed: a man is born on the second square of his arm (startIndex), so one square sits behind him; from there he needs exactly 52 to reach heaven (46 to his long bar, 5 lane bars, then heaven)."
 }

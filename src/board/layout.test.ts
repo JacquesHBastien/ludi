@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COLORS, HEAVEN, LAST_TRACK, TRACK_LENGTH, trackIndexOf } from '../engine';
+import { COLORS, HEAVEN, LANE_START, LAST_TRACK, trackIndexOf } from '../engine';
 import { UNIT, heavenRect, heavenSpot, laneRects, squareCenter, trackRects, yardRect, yardSpot, type GridRect, type Point } from './layout';
 
 const inside = (pt: Point, [x, y, w, h]: GridRect, pad = 0) =>
@@ -9,7 +9,7 @@ describe('board layout', () => {
   it('puts every track and lane man on his own square', () => {
     for (const c of COLORS) {
       for (let p = 0; p <= LAST_TRACK; p++) expect(inside(squareCenter(c, p), trackRects[trackIndexOf(c, p)!]!)).toBe(true);
-      for (let step = 0; step < 5; step++) expect(inside(squareCenter(c, TRACK_LENGTH + step), laneRects(c)[step]!)).toBe(true);
+      for (let step = 0; step < 5; step++) expect(inside(squareCenter(c, LANE_START + step), laneRects(c)[step]!)).toBe(true);
     }
   });
 

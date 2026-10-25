@@ -17,9 +17,10 @@ export interface Player {
 /**
  * A man's position is his progress along his own path:
  *   -1        yard
- *   0..47     main track (0 = his start square, 47 = his long crossing bar)
- *   48..52    his home lane (safe)
- *   53        heaven
+ *   0..46     main track (0 = his start square, one into his arm; 46 = his long crossing bar)
+ *   47..51    his home lane (safe)
+ *   52        heaven
+ * The exact numbers come from board-geometry.json (see LAST_TRACK, LANE_START, HEAVEN).
  */
 export type Progress = number;
 
@@ -57,7 +58,8 @@ export interface Turn {
 }
 
 export interface GameState {
-  version: 1;
+  /** Bumped when the meaning of saved positions changes. 2: born one square into the arm. */
+  version: 2;
   rules: Rules;
   players: Player[];
   /** Colors in play, in turn order. */

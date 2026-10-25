@@ -63,10 +63,14 @@ function noise(dur: number, { gain = 0.25, at = 0, freq = 2500 }: { gain?: numbe
 }
 
 export const sfx = {
-  /** Dice rattling in a cup, then landing. */
-  roll() {
-    [0, 0.06, 0.13, 0.19, 0.27, 0.34].forEach((at, i) => noise(0.05, { at, freq: 1800 + i * 300, gain: 0.35 }));
-    noise(0.08, { at: 0.46, freq: 900, gain: 0.5 });
+  /** Dice rattling out of the hand, bouncing twice on the board and settling, over `seconds`. */
+  roll(seconds = 0.5) {
+    [0, 0.05, 0.11, 0.16, 0.22].forEach((at, i) => noise(0.05, { at, freq: 1800 + i * 300, gain: 0.3 }));
+    // Bounces line up with the FlyingDice path.
+    noise(0.07, { at: seconds * 0.46, freq: 1100, gain: 0.55 });
+    noise(0.06, { at: seconds * 0.6, freq: 1300, gain: 0.4 });
+    [0.8, 0.88, 0.94].forEach((f) => noise(0.04, { at: seconds * f, freq: 2200, gain: 0.25 }));
+    noise(0.08, { at: seconds * 0.99, freq: 900, gain: 0.5 });
   },
   /** One hop of a man moving a square. */
   step() {

@@ -42,7 +42,7 @@ export function createGame(setup: GameSetup): GameState {
   if (first < 0) throw new Error(`${setup.firstColor} is not in this game`);
 
   return {
-    version: 1,
+    version: 2,
     rules,
     players: players.map((p) => ({ ...p })),
     seats,

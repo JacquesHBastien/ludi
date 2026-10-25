@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { YARD } from '../engine';
-import { at, pair, play, roll, scenario, single } from '../engine/testkit';
+import { H, at, pair, play, roll, scenario, single } from '../engine/testkit';
 import { nextColor, optionLabel, optionsAt, pickMoment, ranking, usedFlags } from './turn';
 
 describe('turn helpers', () => {
@@ -36,12 +36,12 @@ describe('turn helpers', () => {
     const bornTwo = play(roll(scenario({}), 6, 6), pair(YARD, 6));
     expect(pickMoment(bornTwo, 'red')).toEqual({ kind: 'born', color: 'red', count: 2, rollAgain: true });
 
-    const heaven = play(roll(scenario({ rules: { diceMode: 'one' }, men: { red: [50] } }), 3), single(50, 3));
+    const heaven = play(roll(scenario({ rules: { diceMode: 'one' }, men: { red: [H - 3] } }), 3), single(H - 3, 3));
     expect(pickMoment(heaven, 'red')).toEqual({ kind: 'heaven', color: 'red', home: 1 });
   });
 
   it('skips finished colors and ranks players', () => {
-    const s = scenario({ men: { red: [53, 53, 53, 53], green: [53, 10] } });
+    const s = scenario({ men: { red: [H, H, H, H], green: [H, 10] } });
     expect(nextColor(s, 'black')).toBe('gold');
     expect(ranking(s)).toEqual(['red', 'green', 'gold', 'black']);
   });

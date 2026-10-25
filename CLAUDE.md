@@ -40,7 +40,8 @@ The `.dc.html` files are Claude Design canvas files. They are **visual reference
 - The long bar at the outer end of each arm is a normal track square for everyone.
 - Each player turns into their home lane right after their `lastTrackIndex` (that long bar). It is the last square where their man can be killed.
 
-- Heaven is 6 steps past `lastTrackIndex`: five lane bars, then heaven. From his start square a man needs exactly 53.
+- A man is born on the second square of his arm (`startIndex`), so there is always one square behind him that is never on his own lap.
+- Heaven is 6 steps past `lastTrackIndex`: five lane bars, then heaven. From his start square a man needs exactly 52 (46 to his long bar).
 - Nothing passes another color's block, not even a block moving together on a double. A moving block may only land exactly on it (and kill it).
 - A block of 3 on a double: two men move together, the third stays.
 - Two dice, only one usable: it must be the bigger die if the bigger die can move.

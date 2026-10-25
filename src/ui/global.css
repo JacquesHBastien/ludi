@@ -45,18 +45,6 @@ button:disabled {
   }
 }
 
-@keyframes ludi-tumble {
-  0% {
-    transform: translateY(-14px) rotate(-200deg) scale(0.85);
-  }
-  60% {
-    transform: translateY(2px) rotate(15deg) scale(1.03);
-  }
-  100% {
-    transform: translateY(0) rotate(0) scale(1);
-  }
-}
-
 @keyframes ludi-pop {
   from {
     transform: scale(0.9);

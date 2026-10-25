@@ -2,7 +2,7 @@
 // One grid unit is 21px, so the 16-unit board is 336px: the size in the mockups.
 // The SVG scales from there, so these numbers are only the drawing's coordinate space.
 import geometry from '../../design/board-geometry.json';
-import { HEAVEN, LAST_TRACK, TRACK_LENGTH, YARD, type Color, type Progress } from '../engine';
+import { HEAVEN, LANE_START, LAST_TRACK, TRACK_LENGTH, YARD, type Color, type Progress } from '../engine';
 
 export const UNIT = 21;
 export const BOARD_PX = geometry.gridSize * UNIT;
@@ -76,5 +76,5 @@ export function heavenSpot(c: Color, i: number, n: number): Point {
 export function squareCenter(c: Color, p: Progress): Point {
   if (p === YARD || p === HEAVEN) throw new Error('Yard and heaven men have their own spots');
   if (p <= LAST_TRACK) return centerOf(trackRects[(geometry.players[c].startIndex + p) % TRACK_LENGTH]!);
-  return centerOf(laneRects(c)[p - TRACK_LENGTH]!);
+  return centerOf(laneRects(c)[p - LANE_START]!);
 }

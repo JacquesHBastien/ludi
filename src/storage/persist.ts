@@ -25,7 +25,8 @@ export function loadGame(store: KeyValueStore | null = browserStorage()): GameSt
     const raw = store?.getItem(SAVE_KEY);
     if (!raw) return null;
     const state = JSON.parse(raw) as GameState;
-    return state.version === 1 ? state : null;
+    // Older saves count squares differently; drop them rather than misplace men.
+    return state.version === 2 ? state : null;
   } catch {
     return null;
   }

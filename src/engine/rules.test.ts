@@ -1,11 +1,12 @@
 // One test (or a few) per scenario in RULES-TESTS.md, numbered the same way.
-// Positions are progress values: red's progress equals the shared track index;
-// for other colors use at(color, trackIndex). 48..52 = home lane, 53 = heaven.
+// Positions are progress values from red's point of view: at(color, n) puts another color's man
+// on the square red reaches at progress n, and sq(n) is that square's shared track index.
+// 0..LAST_TRACK = track, LANE_START.. = home lane, H = heaven.
 import { describe, expect, it } from 'vitest';
-import { COLORS, HEAVEN, YARD, lastTrackIndex, locationOf, startIndex, trackIndexOf } from './board';
+import { COLORS, HEAVEN, LANE_START, LAST_TRACK, YARD, lastTrackIndex, locationOf, progressAt, startIndex, trackIndexOf } from './board';
 import { applyAction, blocks, createGame } from './engine';
 import type { Color } from './types';
-import { at, moves, pair, play, roll, scenario, single, sorted } from './testkit';
+import { H, at, moves, pair, play, roll, scenario, single, sorted, sq } from './testkit';
 
 const ONE = { diceMode: 'one' } as const;
 const TWO = { diceMode: 'two' } as const;
@@ -14,12 +15,24 @@ describe('board', () => {
   it('maps every color onto the geometry', () => {
     for (const c of COLORS) {
       expect(trackIndexOf(c, 0)).toBe(startIndex(c));
-      expect(trackIndexOf(c, 47)).toBe(lastTrackIndex(c));
-      expect(trackIndexOf(c, 48)).toBeNull();
+      expect(trackIndexOf(c, LAST_TRACK)).toBe(lastTrackIndex(c));
+      expect(trackIndexOf(c, LANE_START)).toBeNull();
     }
-    expect(HEAVEN).toBe(53);
-    expect(locationOf('gold', 48)).toEqual({ kind: 'lane', step: 0 });
-    expect(locationOf('gold', 52)).toEqual({ kind: 'lane', step: 4 });
+    // Born one square into the arm, so 46 to the long bar, 5 lane bars, then heaven.
+    expect(startIndex('red')).toBe(1);
+    expect(LAST_TRACK).toBe(46);
+    expect(HEAVEN).toBe(52);
+    expect(locationOf('gold', LANE_START)).toEqual({ kind: 'lane', step: 0 });
+    expect(locationOf('gold', HEAVEN - 1)).toEqual({ kind: 'lane', step: 4 });
+  });
+
+  it('a man is born one square into his arm and never lands on the square behind it', () => {
+    for (const c of COLORS) {
+      const behind = (startIndex(c) - 1 + 48) % 48;
+      for (let p = 0; p <= LAST_TRACK; p++) expect(trackIndexOf(c, p)).not.toBe(behind);
+    }
+    const born = play(roll(scenario({ rules: { diceMode: 'one' } }), 6), single(YARD, 6));
+    expect(locationOf('red', born.men.red.find((p) => p !== YARD)!)).toEqual({ kind: 'track', index: 1 });
   });
 
   it('starts with every man in the yard and the first seat to roll', () => {
@@ -82,8 +95,8 @@ describe('Getting born', () => {
     s = play(s, pair(YARD, 6));
     expect(sorted(s.men.red)).toEqual([YARD, YARD, 0, 0]);
     expect(s.events).toContainEqual({ type: 'born', color: 'red', count: 2 });
-    expect(s.events).toContainEqual({ type: 'block', color: 'red', trackIndex: 0, count: 2 });
-    expect(blocks(s)).toEqual([{ color: 'red', trackIndex: 0, count: 2 }]);
+    expect(s.events).toContainEqual({ type: 'block', color: 'red', trackIndex: sq(0), count: 2 });
+    expect(blocks(s)).toEqual([{ color: 'red', trackIndex: sq(0), count: 2 }]);
 
     // Two separate borns end the same way.
     let u = roll(scenario({ rules: TWO }), 6, 6);
@@ -110,27 +123,27 @@ describe('Getting born', () => {
     s = play(s, pair(YARD, 6));
     expect(sorted(s.men.red)).toEqual([YARD, YARD, 0, 0]);
     expect(s.men.gold).toEqual([YARD, YARD, YARD, YARD]);
-    expect(s.events).toContainEqual({ type: 'kill', color: 'red', victim: 'gold', count: 2, trackIndex: 0 });
+    expect(s.events).toContainEqual({ type: 'kill', color: 'red', victim: 'gold', count: 2, trackIndex: sq(0) });
   });
 });
 
 describe('Moving and dice', () => {
   // Gold block on track 13. Red man A on 10, man B in his home lane 3 from heaven.
-  const blockAt13 = { red: [10, 50], gold: [at('gold', 13), at('gold', 13)] };
+  const blockAt13 = { red: [10, H - 3], gold: [at('gold', 13), at('gold', 13)] };
 
   it('7a. both dice must be used when any way exists', () => {
     const s = roll(scenario({ rules: TWO, men: blockAt13 }), 3, 2);
     // B+2 would leave the 3 unusable (A+3 lands on the block, B+3 overshoots), so it is not offered.
-    expect(moves(s)).toEqual([single(10, 2), single(50, 3)]);
-    const done = play(play(s, single(10, 2)), single(50, 3));
+    expect(moves(s)).toEqual([single(10, 2), single(H - 3, 3)]);
+    const done = play(play(s, single(10, 2)), single(H - 3, 3));
     expect(sorted(done.men.red)).toEqual([YARD, YARD, 12, HEAVEN]);
     expect(done.turn.color).toBe('gold');
   });
 
   it('7b. if only one die can be used, use it', () => {
     let s = roll(scenario({ rules: TWO, men: blockAt13 }), 3, 4);
-    expect(moves(s)).toEqual([single(50, 3)]);
-    s = play(s, single(50, 3));
+    expect(moves(s)).toEqual([single(H - 3, 3)]);
+    s = play(s, single(H - 3, 3));
     expect(s.turn.color).toBe('gold'); // the 4 is lost
   });
 
@@ -158,14 +171,14 @@ describe('Moving and dice', () => {
   });
 
   it('9. exact finish: 3 from heaven with a 5 cannot move', () => {
-    const s = roll(scenario({ rules: ONE, men: { red: [50, 10] } }), 5);
+    const s = roll(scenario({ rules: ONE, men: { red: [H - 3, 10] } }), 5);
     expect(moves(s)).toEqual([single(10, 5)]);
 
-    const skipped = roll(scenario({ rules: ONE, men: { red: [50] } }), 5);
+    const skipped = roll(scenario({ rules: ONE, men: { red: [H - 3] } }), 5);
     expect(skipped.events).toContainEqual({ type: 'noMoves', color: 'red' });
     expect(skipped.turn.color).toBe('gold');
 
-    const exact = play(roll(scenario({ rules: ONE, men: { red: [50] } }), 3), single(50, 3));
+    const exact = play(roll(scenario({ rules: ONE, men: { red: [H - 3] } }), 3), single(H - 3, 3));
     expect(exact.men.red).toContain(HEAVEN);
     expect(exact.events).toContainEqual({ type: 'heaven', color: 'red', count: 1 });
   });
@@ -217,12 +230,13 @@ describe('Killing', () => {
   it('15. landing exactly on a single opponent man sends him to his yard', () => {
     const s = play(roll(scenario({ rules: ONE, men: { red: [10], gold: [at('gold', 13)] } }), 3), single(10, 3));
     expect(s.men.gold).toEqual([YARD, YARD, YARD, YARD]);
-    expect(s.events).toContainEqual({ type: 'kill', color: 'red', victim: 'gold', count: 1, trackIndex: 13 });
+    expect(s.events).toContainEqual({ type: 'kill', color: 'red', victim: 'gold', count: 1, trackIndex: sq(13) });
   });
 
   it('16. a man on his own start square can still be killed', () => {
     const goldOnStart = { red: [9], gold: [0] };
-    expect(trackIndexOf('gold', 0)).toBe(12);
+    expect(trackIndexOf('gold', 0)).toBe(13);
+    expect(trackIndexOf('red', 12)).toBe(13);
     const s = play(roll(scenario({ rules: ONE, men: goldOnStart }), 3), single(9, 3));
     expect(s.men.gold).toEqual([YARD, YARD, YARD, YARD]);
   });
@@ -252,11 +266,11 @@ describe('Killing', () => {
 describe('Blocks', () => {
   it('19. two or three of my men on one square form a block', () => {
     let s = play(roll(scenario({ rules: TWO, men: { red: [10, 12] } }), 2, 1), single(10, 2));
-    expect(s.events).toContainEqual({ type: 'block', color: 'red', trackIndex: 12, count: 2 });
-    expect(blocks(s)).toEqual([{ color: 'red', trackIndex: 12, count: 2 }]);
+    expect(s.events).toContainEqual({ type: 'block', color: 'red', trackIndex: sq(12), count: 2 });
+    expect(blocks(s)).toEqual([{ color: 'red', trackIndex: sq(12), count: 2 }]);
 
     s = play(roll(scenario({ rules: ONE, men: { red: [12, 12, 10] } }), 2), single(10, 2));
-    expect(blocks(s)).toEqual([{ color: 'red', trackIndex: 12, count: 3 }]);
+    expect(blocks(s)).toEqual([{ color: 'red', trackIndex: sq(12), count: 3 }]);
   });
 
   it('20. a single man cannot pass or land on an opponent block', () => {
@@ -309,7 +323,7 @@ describe('Blocks', () => {
     expect(moves(s)).toEqual([pair(10, 4)]); // a single 4 cannot land on their block
     s = play(s, pair(10, 4));
     expect(s.men.gold).toEqual([YARD, YARD, YARD, YARD]);
-    expect(s.events).toContainEqual({ type: 'kill', color: 'red', victim: 'gold', count: 2, trackIndex: 14 });
+    expect(s.events).toContainEqual({ type: 'kill', color: 'red', victim: 'gold', count: 2, trackIndex: sq(14) });
   });
 
   it('25. my block landing on a single opponent man kills him', () => {
@@ -326,23 +340,26 @@ describe('Blocks', () => {
 
 describe('Last square before home', () => {
   it('26a. a man on his own long crossing bar can be killed', () => {
-    const gold47 = at('gold', lastTrackIndex('gold'));
-    expect(gold47).toBe(47);
-    const s = play(roll(scenario({ rules: ONE, men: { red: [8], gold: [gold47] } }), 3), single(8, 3));
+    // Gold's long bar is the square red reaches at progress 10.
+    const bar = progressAt('red', lastTrackIndex('gold'));
+    expect(bar).toBe(10);
+    const s = play(roll(scenario({ rules: ONE, men: { red: [bar - 3], gold: [LAST_TRACK] } }), 3), single(bar - 3, 3));
     expect(s.men.gold).toEqual([YARD, YARD, YARD, YARD]);
   });
 
   it('26b. a man who has turned into his home lane can no longer be killed', () => {
-    const s = play(roll(scenario({ rules: ONE, men: { red: [8], gold: [48] } }), 3), single(8, 3));
+    // Red runs past gold's long bar while gold sits on his first lane bar.
+    const s = play(roll(scenario({ rules: ONE, men: { red: [8], gold: [LANE_START] } }), 3), single(8, 3));
     expect(s.men.red[0]).toBe(11);
-    expect(s.men.gold[0]).toBe(48);
+    expect(trackIndexOf('red', 10)).toBe(lastTrackIndex('gold'));
+    expect(s.men.gold[0]).toBe(LANE_START);
   });
 });
 
 describe('One-die mode', () => {
   it('26. blocks can still form', () => {
     const s = play(roll(scenario({ rules: ONE, men: { red: [10, 12] } }), 2), single(10, 2));
-    expect(blocks(s)).toEqual([{ color: 'red', trackIndex: 12, count: 2 }]);
+    expect(blocks(s)).toEqual([{ color: 'red', trackIndex: sq(12), count: 2 }]);
   });
 
   it('27. blocks cannot be passed, cannot be killed, and cannot move together', () => {
@@ -365,7 +382,7 @@ describe('One-die mode', () => {
 
     const choice = roll(scenario({ rules: ONE, men: { red: [10, 10, 20] } }), 3);
     expect(moves(choice)).toEqual([single(10, 3), single(20, 3)]);
-    expect(blocks(play(choice, single(20, 3)))).toEqual([{ color: 'red', trackIndex: 10, count: 2 }]);
+    expect(blocks(play(choice, single(20, 3)))).toEqual([{ color: 'red', trackIndex: sq(10), count: 2 }]);
   });
 });
 
@@ -374,26 +391,26 @@ describe('Winning', () => {
     let s = scenario({
       colors: ['red', 'gold', 'green'],
       rules: ONE,
-      men: { red: [53, 53, 53, 50], gold: [53, 53, 53, 50] },
+      men: { red: [H, H, H, H - 3], gold: [H, H, H, H - 3] },
     });
-    s = play(roll(s, 3), single(50, 3));
+    s = play(roll(s, 3), single(H - 3, 3));
     expect(s.placements).toEqual(['red']);
     expect(s.events).toContainEqual({ type: 'finished', playerId: 'red', place: 1 });
     expect(s.status).toBe('playing');
     expect(s.turn.color).toBe('gold');
 
-    s = play(roll(s, 1), single(50, 1)); // gold to 51
+    s = play(roll(s, 1), single(H - 3, 1)); // gold to H - 2
     s = roll(s, 2); // green has nothing to move
     expect(s.turn.color).toBe('gold'); // red is skipped from now on
 
-    s = play(roll(s, 2), single(51, 2));
+    s = play(roll(s, 2), single(H - 2, 2));
     expect(s.status).toBe('over');
     expect(s.result).toEqual({ kind: 'placed', placements: ['red', 'gold', 'green'] });
   });
 
   it('29b. two players: the first one home ends the game; a final 6 gives no extra roll', () => {
     const duel = { colors: ['red', 'green'] as Color[], rules: ONE };
-    const s = play(roll(scenario({ ...duel, men: { red: [53, 53, 53, 47] } }), 6), single(47, 6));
+    const s = play(roll(scenario({ ...duel, men: { red: [H, H, H, LAST_TRACK] } }), 6), single(LAST_TRACK, 6));
     expect(s.status).toBe('over');
     expect(s.result).toEqual({ kind: 'placed', placements: ['red', 'green'] });
     expect(() => roll(s, 3)).toThrow(/over/);
@@ -417,10 +434,10 @@ describe('Winning', () => {
   it('30. heaven-less ON: once every player has a man in heaven, it is a draw', () => {
     const s = play(
       roll(
-        scenario({ colors: ['red', 'green'], rules: { ...ONE, heavenless: true }, men: { red: [53, 10], green: [50] }, turn: 'green' }),
+        scenario({ colors: ['red', 'green'], rules: { ...ONE, heavenless: true }, men: { red: [H, 10], green: [H - 3] }, turn: 'green' }),
         3,
       ),
-      single(50, 3),
+      single(H - 3, 3),
     );
     expect(s.status).toBe('over');
     expect(s.result).toEqual({ kind: 'draw' });
@@ -429,8 +446,8 @@ describe('Winning', () => {
 
   it('31. heaven-less OFF: that never ends the game', () => {
     const s = play(
-      roll(scenario({ colors: ['red', 'green'], rules: ONE, men: { red: [53, 10], green: [50] }, turn: 'green' }), 3),
-      single(50, 3),
+      roll(scenario({ colors: ['red', 'green'], rules: ONE, men: { red: [H, 10], green: [H - 3] }, turn: 'green' }), 3),
+      single(H - 3, 3),
     );
     expect(s.status).toBe('playing');
     expect(s.turn.color).toBe('red');

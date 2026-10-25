@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import type { Theme } from '../theme/themes';
 import { GRAIN, HIGHLIGHT } from '../theme/themes';
 import { DARK_INK } from './style';
@@ -48,24 +47,10 @@ export function Die({ value, used, selected }: DieView) {
   );
 }
 
-/** A die tumbling through random faces while the roll is in the air. */
-function TumblingDie({ index }: { index: number }) {
-  const [face, setFace] = useState(1 + ((index * 3) % 6));
-  useEffect(() => {
-    const id = setInterval(() => setFace((f) => 1 + ((f + 1 + Math.floor(Math.random() * 4)) % 6)), 70);
-    return () => clearInterval(id);
-  }, []);
-  return (
-    <div style={{ animation: `ludi-tumble 0.5s ease-out`, animationDelay: `${index * 40}ms` }}>
-      <Die value={face} />
-    </div>
-  );
-}
-
 interface TrayProps {
   theme: Theme;
   dice: DieView[];
-  /** The dice are in the air. */
+  /** The dice are out of the tray, flying over the board: show their empty slots. */
   rolling?: boolean;
   /** Tap the tray to roll. */
   onRoll?: () => void;
@@ -91,7 +76,7 @@ export function DiceTray({ theme, dice, rolling, onRoll, onPick }: TrayProps) {
     return (
       <div style={tray} aria-label="Rolling" role="status">
         {dice.map((_, i) => (
-          <TumblingDie key={i} index={i} />
+          <div key={i} style={{ width: 54, height: 54, borderRadius: 11, border: '2px dashed rgba(255,255,255,0.18)' }} />
         ))}
       </div>
     );

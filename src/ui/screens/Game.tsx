@@ -5,6 +5,7 @@ import { HEAVEN, YARD, applyAction, legalMoves, type Action, type Color, type Ga
 import { CAP, HIGHLIGHT, type Theme } from '../../theme/themes';
 import { copy } from '../copy';
 import { DiceTray, type DieView } from '../Dice';
+import { FlyingDice, type Flight } from '../FlyingDice';
 import { IconButton, PrimaryButton, Screen } from '../kit';
 import { Icons } from '../icons';
 import { DARK_INK, GOLD_BUTTON, display, seatInfo } from '../style';
@@ -32,7 +33,8 @@ interface GameProps {
 
 type View = 'handoff' | 'play' | 'turnOver';
 
-const ROLL_MS = 560;
+/** How long the dice spend flying over the board. */
+const ROLL_MS = 1700;
 
 const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -47,7 +49,9 @@ export function Game(props: GameProps) {
   const [results, setResults] = useState(game.status === 'over');
   const [sheet, setSheet] = useState<'rules' | 'menu' | null>(null);
   /** A roll or move is animating; the engine result is applied when it lands. */
-  const [busy, setBusy] = useState<{ kind: 'roll' } | { kind: 'move'; moving: Moving } | null>(null);
+  const [busy, setBusy] = useState<{ kind: 'roll'; flight: Flight | null } | { kind: 'move'; moving: Moving } | null>(null);
+  const trayRef = useRef<HTMLDivElement>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
 
@@ -67,9 +71,15 @@ export function Game(props: GameProps) {
     };
 
     if (action.type === 'roll') {
-      sfx.roll();
-      if (reducedMotion()) return land(0);
-      setBusy({ kind: 'roll' });
+      if (reducedMotion()) {
+        sfx.roll();
+        return land(0);
+      }
+      const tray = trayRef.current?.getBoundingClientRect();
+      const board = boardRef.current?.getBoundingClientRect();
+      const flight = tray && board ? { values: action.dice, tray, board, duration: ROLL_MS } : null;
+      sfx.roll(ROLL_MS / 1000);
+      setBusy({ kind: 'roll', flight });
       return land(ROLL_MS);
     }
     const m = action.move;
@@ -185,7 +195,7 @@ export function Game(props: GameProps) {
 
       <PlayerStrip theme={theme} game={game} active={active} />
 
-      <div style={{ width: '100%', maxWidth: 354, alignSelf: 'center' }}>
+      <div ref={boardRef} style={{ width: '100%', maxWidth: 354, alignSelf: 'center' }}>
         <Board
           theme={theme}
           seats={game.seats}
@@ -205,13 +215,15 @@ export function Game(props: GameProps) {
             </div>
             <div style={display(shout.length > 22 ? 26 : 32, { lineHeight: 1.05, color: theme.callout, minHeight: 28 })}>{shout}</div>
           </div>
-          <DiceTray
-            theme={theme}
-            dice={dice}
-            rolling={busy?.kind === 'roll'}
-            onRoll={playing && turn.phase === 'roll' ? () => act({ type: 'roll', dice: rollDice(game.rules.diceMode) }) : undefined}
-            onPick={canPick ? (i) => setPicked(picked === turn.rolled[i] ? null : turn.rolled[i]!) : undefined}
-          />
+          <div ref={trayRef} style={{ flexShrink: 0 }}>
+            <DiceTray
+              theme={theme}
+              dice={dice}
+              rolling={busy?.kind === 'roll'}
+              onRoll={playing && turn.phase === 'roll' ? () => act({ type: 'roll', dice: rollDice(game.rules.diceMode) }) : undefined}
+              onPick={canPick ? (i) => setPicked(picked === turn.rolled[i] ? null : turn.rolled[i]!) : undefined}
+            />
+          </div>
         </div>
 
         <HintCard theme={theme}>
@@ -229,7 +241,11 @@ export function Game(props: GameProps) {
           ) : turn.phase === 'roll' ? (
             <>
               <HintTitle>
-                {lastRoll?.color === turn.color && lastRoll.dice.includes(6) ? 'Six! Roll again.' : 'Tap the dice to roll.'}
+                {busy?.kind === 'roll'
+                  ? 'Rolling…'
+                  : lastRoll?.color === turn.color && lastRoll.dice.includes(6)
+                    ? 'Six! Roll again.'
+                    : 'Tap the dice to roll.'}
               </HintTitle>
               <HintBody>
                 {lastRoll?.color === turn.color && lastRoll.noMoves
@@ -284,6 +300,7 @@ export function Game(props: GameProps) {
         )}
       </div>
 
+      {busy?.kind === 'roll' && busy.flight && <FlyingDice flight={busy.flight} />}
       {moment && (
         <MomentOverlay theme={theme} game={game} rules={game.rules} moment={moment} patois={patois} onDone={() => setMoment(null)} />
       )}
