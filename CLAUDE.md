@@ -54,5 +54,15 @@ The `.dc.html` files are Claude Design canvas files. They are **visual reference
 - Being born kills a single opponent man sitting on your start square.
 - Heaven-less draw only applies if nobody has finished yet.
 
+## Planned next (agreed with Jacques, 2026-10-25)
+- Dice throw style: try the options at `/ludi/dice/` (Tap, Hold & shake, Flick, Shake phone), then add the favourite to the game as a setting.
+- Competitive features, all approved except revenge (skipped for now):
+  - Kill tally per player in the player strip.
+  - Rotating kill taunts, with Patois and plain-English versions.
+  - Bounty: show a target on a player's FIRST man about to reach heaven (once one man is home, their 2nd and 3rd don't count). Optional second bounty: a player's last (4th) man within about 10 of their home-lane turn-off.
+  - End-of-game awards (most kills, never killed, most sent home, most sixes).
+  - Family leaderboard kept on the phone.
+  - Rivalry lines on the handoff screen ("Marlon has killed you 3 times tonight").
+
 ## Open questions (ask Jacques, don't guess)
 - One-die mode: a block parked on someone's start square could stall them for a long time. Watch in playtesting; a turn limit may be added.

@@ -4,7 +4,7 @@ Patois is on by default and can be turned off in settings. Keep both versions.
 
 | Moment | Patois on | Patois off |
 |---|---|---|
-| Rolled a double | Double four! Move di block! | You rolled a double 4 |
+| Rolled a double | Double four! Move di block! (1 = "ace", 2 = "deuce": Double ace! / Double deuce!) | Double four! Move your block! (Double one! / Double two!) |
 | Kill | Dead! / Back a yard to {yard} yuh go. | Killed! / It goes back to the {yard} yard. |
 | Born | Yuh born! | Born! |
 | Block | Block! | Blocked! |

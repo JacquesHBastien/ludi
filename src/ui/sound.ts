@@ -72,6 +72,12 @@ export const sfx = {
     [0.8, 0.88, 0.94].forEach((f) => noise(0.04, { at: seconds * f, freq: 2200, gain: 0.25 }));
     noise(0.08, { at: seconds * 0.99, freq: 900, gain: 0.5 });
   },
+  /** One shake of the dice in a closed hand; harder shakes rattle louder. */
+  shake(power = 1) {
+    const gain = 0.12 + 0.22 * Math.min(power, 1.5);
+    noise(0.035, { freq: 1700 + Math.random() * 900, gain });
+    noise(0.03, { at: 0.045, freq: 2300 + Math.random() * 900, gain: gain * 0.8 });
+  },
   /** One hop of a man moving a square. */
   step() {
     tone(720, 0.05, { type: 'triangle', gain: 0.07 });

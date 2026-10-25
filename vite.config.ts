@@ -6,6 +6,10 @@ export default defineConfig({
   // GitHub Pages serves the site from /ludi-online/; Vercel and local dev use the root.
   base: process.env.BASE_PATH ?? '/',
   plugins: [react()],
+  build: {
+    // The game, plus the dice lab test page at /dice/.
+    rollupOptions: { input: { main: 'index.html', dice: 'dice/index.html' } },
+  },
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',
