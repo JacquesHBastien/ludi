@@ -1,4 +1,4 @@
-import { useId, type KeyboardEvent } from 'react';
+import { useEffect, useId, useState, type KeyboardEvent } from 'react';
 import { HEAVEN, LANE_LENGTH, LAST_TRACK, YARD, type Color, type Progress } from '../engine';
 import { CAP, GRAIN, HIGHLIGHT, SLOT_INDEX, heavenColor, type Theme } from '../theme/themes';
 import { CapShape } from './Cap';
@@ -31,6 +31,20 @@ export interface BoardProps {
   onTapMan?: (from: Progress) => void;
   /** Player names for screen-reader labels. */
   names?: Partial<Record<Color, string>>;
+  /** Men in mid-move: hidden from `from` and drawn hopping along `path` instead. */
+  moving?: Moving;
+}
+
+export interface Moving {
+  /** Changes for every move so the hop restarts. */
+  id: number;
+  color: Color;
+  from: Progress;
+  count: number;
+  /** Every square passed through, ending on the landing square. */
+  path: Progress[];
+  stepMs: number;
+  onStep?: () => void;
 }
 
 interface Piece {
@@ -44,11 +58,12 @@ interface Piece {
   label: string;
 }
 
-export function Board({ theme, seats, men, movable, onTapMan, names = {} }: BoardProps) {
+export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving }: BoardProps) {
   const id = useId();
   const glowId = `${id}glow`;
   const shadowId = `${id}shadow`;
-  const pieces = layoutPieces(theme, seats, men, movable, names);
+  const shown = moving ? withoutMoving(men, moving) : men;
+  const pieces = layoutPieces(theme, seats, shown, movable, names);
   // Draw legal men last so their glow and tap areas sit on top.
   const ordered = [...pieces.filter((p) => !p.legal), ...pieces.filter((p) => p.legal)];
 
@@ -88,6 +103,7 @@ export function Board({ theme, seats, men, movable, onTapMan, names = {} }: Boar
           {ordered.map((p) => (
             <PieceView key={p.key} piece={p} fill={theme.players[p.color]} filter={p.legal ? glowId : shadowId} />
           ))}
+          {moving && <Hopper key={moving.id} moving={moving} men={men} fill={theme.players[moving.color]} filter={shadowId} />}
           {onTapMan &&
             ordered
               .filter((p) => p.legal)
@@ -123,6 +139,54 @@ const SALTIRE = [
   `0,0 ${S},0 4,${4 - S} 4,4 ${4 - S},4 0,${S}`,
   `4,0 4,${S} ${S},4 0,4 0,${4 - S} ${4 - S},0`,
 ] as const;
+
+/** Hide the men that are moving. Yard men vanish from the sockets the engine takes them from (lowest first). */
+function withoutMoving(men: Record<Color, Progress[]>, m: Moving): Record<Color, Progress[]> {
+  let left = m.count;
+  const list = men[m.color].map((p) => (p === m.from && left-- > 0 ? NaN : p));
+  return { ...men, [m.color]: list };
+}
+
+function pointFor(color: Color, p: Progress, men: Progress[], yardSlot: number): Point {
+  if (p === YARD) return yardSpot(color, yardSlot);
+  if (p === HEAVEN) {
+    const home = men.filter((x) => x === HEAVEN).length;
+    return heavenSpot(color, home, home + 1);
+  }
+  return squareCenter(color, p);
+}
+
+/** The moving man (or block) stepping from square to square. */
+function Hopper({ moving, men, fill, filter }: { moving: Moving; men: Record<Color, Progress[]>; fill: string; filter: string }) {
+  const [step, setStep] = useState(0);
+  const { color, from, count, path, stepMs, onStep } = moving;
+  useEffect(() => {
+    if (step >= path.length) return;
+    const t = setTimeout(() => {
+      setStep((s) => s + 1);
+      onStep?.();
+    }, step === 0 ? 30 : stepMs);
+    return () => clearTimeout(t);
+  }, [step, path.length, stepMs, onStep]);
+
+  const list = men[color];
+  const points = [from, ...path].map((p) => pointFor(color, p, list, list.indexOf(from)));
+  const at = points[Math.min(step, points.length - 1)]!;
+  const p = path[Math.max(0, Math.min(step, path.length) - 1)] ?? from;
+  const size = p === YARD ? SIZE.yard : p === HEAVEN ? SIZE.heaven : SIZE.board;
+  const piece: Piece = { key: 'hop', color, from, at: { x: 0, y: 0 }, size, count, legal: false, label: '' };
+  return (
+    <g
+      style={{ transform: `translate(${at.x}px, ${at.y}px)`, transition: `transform ${Math.min(stepMs, 160)}ms ease-out` }}
+      aria-hidden="true"
+    >
+      {/* A slight lift while in the air. */}
+      <g style={{ transform: 'scale(1.18)' }}>
+        <PieceView piece={piece} fill={fill} filter={filter} />
+      </g>
+    </g>
+  );
+}
 
 const layer = { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' } as const;
 
@@ -238,7 +302,7 @@ function layoutPieces(
     const list = men[color];
 
     list.forEach((p, n) => {
-      if (p !== YARD) return;
+      if (p !== YARD) return; // NaN (a man in mid-move) is skipped here and below
       const legal = canMove(YARD);
       out.push({
         key: `${color}y${n}`, color, from: YARD, at: yardSpot(color, n), size: SIZE.yard, count: 1, legal,
@@ -247,6 +311,7 @@ function layoutPieces(
     });
 
     const home = list.filter((p) => p === HEAVEN).length;
+    const visible = list.filter((p) => !Number.isNaN(p));
     for (let i = 0; i < home; i++) {
       out.push({
         key: `${color}h${i}`, color, from: HEAVEN, at: heavenSpot(color, i, home), size: SIZE.heaven, count: 1, legal: false,
@@ -255,7 +320,7 @@ function layoutPieces(
     }
 
     const counts = new Map<Progress, number>();
-    for (const p of list) if (p !== YARD && p !== HEAVEN) counts.set(p, (counts.get(p) ?? 0) + 1);
+    for (const p of visible) if (p !== YARD && p !== HEAVEN) counts.set(p, (counts.get(p) ?? 0) + 1);
     for (const [p, count] of counts) {
       const legal = canMove(p);
       const what = count > 1 ? `block of ${count} men` : 'man';

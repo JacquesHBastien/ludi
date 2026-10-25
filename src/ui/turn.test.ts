@@ -33,6 +33,9 @@ describe('turn helpers', () => {
     const born = play(roll(scenario({ rules: { diceMode: 'one' } }), 6), single(YARD, 6));
     expect(pickMoment(born, 'red')).toEqual({ kind: 'born', color: 'red', count: 1, rollAgain: true });
 
+    const bornTwo = play(roll(scenario({}), 6, 6), pair(YARD, 6));
+    expect(pickMoment(bornTwo, 'red')).toEqual({ kind: 'born', color: 'red', count: 2, rollAgain: true });
+
     const heaven = play(roll(scenario({ rules: { diceMode: 'one' }, men: { red: [50] } }), 3), single(50, 3));
     expect(pickMoment(heaven, 'red')).toEqual({ kind: 'heaven', color: 'red', home: 1 });
   });

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import type { Theme } from '../theme/themes';
 import { GRAIN, HIGHLIGHT } from '../theme/themes';
 import { DARK_INK } from './style';
@@ -47,9 +48,25 @@ export function Die({ value, used, selected }: DieView) {
   );
 }
 
+/** A die tumbling through random faces while the roll is in the air. */
+function TumblingDie({ index }: { index: number }) {
+  const [face, setFace] = useState(1 + ((index * 3) % 6));
+  useEffect(() => {
+    const id = setInterval(() => setFace((f) => 1 + ((f + 1 + Math.floor(Math.random() * 4)) % 6)), 70);
+    return () => clearInterval(id);
+  }, []);
+  return (
+    <div style={{ animation: `ludi-tumble 0.5s ease-out`, animationDelay: `${index * 40}ms` }}>
+      <Die value={face} />
+    </div>
+  );
+}
+
 interface TrayProps {
   theme: Theme;
   dice: DieView[];
+  /** The dice are in the air. */
+  rolling?: boolean;
   /** Tap the tray to roll. */
   onRoll?: () => void;
   /** Tap one die to pick it. */
@@ -57,7 +74,7 @@ interface TrayProps {
 }
 
 /** The sunken dice tray from the mockup. The whole tray is the roll button when rolling is allowed. */
-export function DiceTray({ theme, dice, onRoll, onPick }: TrayProps) {
+export function DiceTray({ theme, dice, rolling, onRoll, onPick }: TrayProps) {
   const tray = {
     display: 'flex',
     gap: 10,
@@ -70,6 +87,15 @@ export function DiceTray({ theme, dice, onRoll, onPick }: TrayProps) {
     flexShrink: 0,
   } as const;
 
+  if (rolling) {
+    return (
+      <div style={tray} aria-label="Rolling" role="status">
+        {dice.map((_, i) => (
+          <TumblingDie key={i} index={i} />
+        ))}
+      </div>
+    );
+  }
   if (onRoll) {
     return (
       <button

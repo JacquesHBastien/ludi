@@ -6,8 +6,12 @@ import { getTheme } from './theme/themes';
 import { Game } from './ui/screens/Game';
 import { Home } from './ui/screens/Home';
 import { Setup, type SetupResult } from './ui/screens/Setup';
+import { setMuted } from './ui/sound';
 
 type Screen = 'home' | 'setup' | 'game';
+
+// Dev builds only: add ?testdice to the address to choose dice values by hand.
+const TEST_DICE = import.meta.env.DEV && new URLSearchParams(location.search).has('testdice');
 
 export default function App() {
   const [prefs, setPrefsState] = useState<Prefs>(loadPrefs);
@@ -21,6 +25,7 @@ export default function App() {
     setPrefsState(next);
     savePrefs(next);
   };
+  setMuted(prefs.muted);
   const setGame = (next: GameState) => {
     setGameState(next);
     saveGame(next);
@@ -55,8 +60,11 @@ export default function App() {
         game={game}
         theme={getTheme(prefs.themeId)}
         patois={prefs.patois}
+        muted={prefs.muted}
+        testDice={TEST_DICE}
         onChange={setGame}
         onTogglePatois={() => setPrefs({ ...prefs, patois: !prefs.patois })}
+        onToggleSound={() => setPrefs({ ...prefs, muted: !prefs.muted })}
         onHome={() => {
           if (game.status === 'over') clearGame();
           setScreen('home');

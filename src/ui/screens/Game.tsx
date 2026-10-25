@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from 'react';
-import { Board } from '../../board/Board';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Board, type Moving } from '../../board/Board';
 import { CapIcon } from '../../board/Cap';
 import { HEAVEN, YARD, applyAction, legalMoves, type Action, type Color, type GameState, type Progress } from '../../engine';
 import { CAP, HIGHLIGHT, type Theme } from '../../theme/themes';
@@ -9,6 +9,7 @@ import { IconButton, PrimaryButton, Screen } from '../kit';
 import { Icons } from '../icons';
 import { DARK_INK, GOLD_BUTTON, display, seatInfo } from '../style';
 import { rollDice } from '../random';
+import { sfx } from '../sound';
 import { movesForDie, nextColor, optionLabel, optionsAt, pickMoment, usedFlags, type Moment } from '../turn';
 import { GameOver } from './GameOver';
 import { Handoff } from './Handoff';
@@ -19,15 +20,24 @@ interface GameProps {
   game: GameState;
   theme: Theme;
   patois: boolean;
+  muted: boolean;
+  /** Dev only: lets the tester choose the dice. */
+  testDice?: boolean;
   onChange: (game: GameState) => void;
   onTogglePatois: () => void;
+  onToggleSound: () => void;
   onHome: () => void;
   onPlayAgain: () => void;
 }
 
 type View = 'handoff' | 'play' | 'turnOver';
 
-export function Game({ game, theme, patois, onChange, onTogglePatois, onHome, onPlayAgain }: GameProps) {
+const ROLL_MS = 560;
+
+const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+export function Game(props: GameProps) {
+  const { game, theme, patois, muted, testDice, onChange, onTogglePatois, onToggleSound, onHome, onPlayAgain } = props;
   const [view, setView] = useState<View>('handoff');
   const [doneBy, setDoneBy] = useState<Color | null>(null);
   const [lastRoll, setLastRoll] = useState<{ color: Color; dice: number[]; noMoves: boolean } | null>(null);
@@ -36,17 +46,47 @@ export function Game({ game, theme, patois, onChange, onTogglePatois, onHome, on
   const [moment, setMoment] = useState<Moment | null>(null);
   const [results, setResults] = useState(game.status === 'over');
   const [sheet, setSheet] = useState<'rules' | 'menu' | null>(null);
+  /** A roll or move is animating; the engine result is applied when it lands. */
+  const [busy, setBusy] = useState<{ kind: 'roll' } | { kind: 'move'; moving: Moving } | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   const t = copy(patois);
   const { turn } = game;
   const legal = legalMoves(game);
 
   function act(action: Action) {
+    if (busy) return;
     const before = game;
     const after = applyAction(before, action);
-    onChange(after);
     setPicked(null);
     setChoosing(null);
+    const land = (ms: number) => {
+      if (ms <= 0) return settle(before, after);
+      timer.current = setTimeout(() => settle(before, after), ms);
+    };
+
+    if (action.type === 'roll') {
+      sfx.roll();
+      if (reducedMotion()) return land(0);
+      setBusy({ kind: 'roll' });
+      return land(ROLL_MS);
+    }
+    const m = action.move;
+    const to = m.from === YARD ? 0 : m.from + m.die;
+    const path = m.from === YARD ? [0] : Array.from({ length: to - m.from }, (_, i) => m.from + 1 + i);
+    if (reducedMotion()) return land(0);
+    const stepMs = path.length > 8 ? 85 : 120;
+    const moving: Moving = { id: Date.now(), color: before.turn.color, from: m.from, count: m.kind === 'pair' ? 2 : 1, path, stepMs, onStep: sfx.step };
+    setBusy({ kind: 'move', moving });
+    land(30 + path.length * stepMs + 90);
+  }
+
+  /** Apply an action's result once its animation has landed. */
+  function settle(before: GameState, after: GameState) {
+    setBusy(null);
+    onChange(after);
+    playSounds(before, after);
 
     const rolled = after.events.find((e) => e.type === 'rolled');
     if (rolled) setLastRoll({ color: rolled.color, dice: rolled.dice, noMoves: after.events.some((e) => e.type === 'noMoves') });
@@ -61,6 +101,7 @@ export function Game({ game, theme, patois, onChange, onTogglePatois, onHome, on
   }
 
   const tapMan = (from: Progress) => {
+    if (busy) return;
     const options = optionsAt(legal, from, picked);
     if (options.length === 1) act({ type: 'move', move: options[0]! });
     else if (options.length > 1) setChoosing(from);
@@ -101,10 +142,13 @@ export function Game({ game, theme, patois, onChange, onTogglePatois, onHome, on
   const active = view === 'turnOver' ? doneBy! : turn.color;
   const me = seatInfo(theme, active, game);
   const next = seatInfo(theme, view === 'turnOver' ? turn.color : nextColor(game, turn.color), game);
-  const playing = view === 'play';
+  // Taps are ignored while dice are in the air or a man is hopping.
+  const playing = view === 'play' && !busy;
 
   const movable = playing && turn.phase === 'move' ? movesForDie(legal, picked).map((m) => m.from) : [];
-  const pairLegal = legal.some((m) => m.kind === 'pair');
+  // A block on the board that can move together, versus a double 6 that can born two men.
+  const pairLegal = legal.some((m) => m.kind === 'pair' && m.from !== YARD);
+  const bornTwo = legal.some((m) => m.kind === 'pair' && m.from === YARD);
 
   let dice: DieView[];
   if (view === 'turnOver' && lastRoll) dice = lastRoll.dice.map((value) => ({ value, used: true }));
@@ -149,6 +193,7 @@ export function Game({ game, theme, patois, onChange, onTogglePatois, onHome, on
           movable={{ color: turn.color, froms: movable }}
           onTapMan={playing ? tapMan : undefined}
           names={Object.fromEntries(game.players.map((p) => [p.color, p.name]))}
+          moving={busy?.kind === 'move' ? busy.moving : undefined}
         />
       </div>
 
@@ -163,6 +208,7 @@ export function Game({ game, theme, patois, onChange, onTogglePatois, onHome, on
           <DiceTray
             theme={theme}
             dice={dice}
+            rolling={busy?.kind === 'roll'}
             onRoll={playing && turn.phase === 'roll' ? () => act({ type: 'roll', dice: rollDice(game.rules.diceMode) }) : undefined}
             onPick={canPick ? (i) => setPicked(picked === turn.rolled[i] ? null : turn.rolled[i]!) : undefined}
           />
@@ -209,10 +255,14 @@ export function Game({ game, theme, patois, onChange, onTogglePatois, onHome, on
             </>
           ) : (
             <>
-              <HintTitle>{pairLegal ? 'Tap your block to move it together.' : 'Tap a glowing man to move.'}</HintTitle>
+              <HintTitle>
+                {pairLegal ? 'Tap your block to move it together.' : bornTwo ? 'Tap your yard to born.' : 'Tap a glowing man to move.'}
+              </HintTitle>
               <HintBody>
                 {pairLegal
                   ? 'Or tap it and pick one man to split off.'
+                  : bornTwo
+                    ? 'Double 6 can born two men at once.'
                   : canPick
                     ? 'Tip: tap a die first to pick which number to use.'
                     : turn.dice.length === 1 && turn.rolled.length === 2
@@ -222,6 +272,10 @@ export function Game({ game, theme, patois, onChange, onTogglePatois, onHome, on
             </>
           )}
         </HintCard>
+
+        {testDice && playing && turn.phase === 'roll' && (
+          <TestDice count={game.rules.diceMode === 'two' ? 2 : 1} onRoll={(dice) => act({ type: 'roll', dice })} />
+        )}
 
         {view === 'play' && (
           <div style={{ fontSize: 13, fontWeight: 800, opacity: 0.8, textAlign: 'center' }}>
@@ -235,7 +289,15 @@ export function Game({ game, theme, patois, onChange, onTogglePatois, onHome, on
       )}
       {sheet === 'rules' && <RulesSheet theme={theme} rules={game.rules} onClose={() => setSheet(null)} />}
       {sheet === 'menu' && (
-        <Menu theme={theme} patois={patois} onTogglePatois={onTogglePatois} onHome={onHome} onClose={() => setSheet(null)} />
+        <Menu
+          theme={theme}
+          patois={patois}
+          muted={muted}
+          onTogglePatois={onTogglePatois}
+          onToggleSound={onToggleSound}
+          onHome={onHome}
+          onClose={() => setSheet(null)}
+        />
       )}
     </Screen>
   );
@@ -337,13 +399,17 @@ function ChoiceButton({ children, onClick, ghost }: { children: ReactNode; onCli
 function Menu({
   theme,
   patois,
+  muted,
   onTogglePatois,
+  onToggleSound,
   onHome,
   onClose,
 }: {
   theme: Theme;
   patois: boolean;
+  muted: boolean;
   onTogglePatois: () => void;
+  onToggleSound: () => void;
   onHome: () => void;
   onClose: () => void;
 }) {
@@ -373,7 +439,11 @@ function Menu({
           animation: 'ludi-pop 0.15s ease-out',
         }}
       >
-        <button onClick={onTogglePatois} style={menuItem(theme)}>
+        <button onClick={onToggleSound} style={menuItem(theme)} aria-pressed={!muted}>
+          <span>Sound</span>
+          <span style={{ color: theme.callout }}>{muted ? 'Off' : 'On'}</span>
+        </button>
+        <button onClick={onTogglePatois} style={menuItem(theme)} aria-pressed={patois}>
           <span>Patois</span>
           <span style={{ color: theme.callout }}>{patois ? 'On' : 'Off'}</span>
         </button>
@@ -404,3 +474,41 @@ const menuItem = (theme: Theme) =>
     justifyContent: 'space-between',
     cursor: 'pointer',
   }) as const;
+
+/** One sound per action, for the most important thing that happened. */
+function playSounds(before: GameState, after: GameState) {
+  const has = (type: string) => after.events.some((e) => e.type === type);
+  if (has('noMoves')) sfx.noMoves();
+  else if (after.placements.length > before.placements.length) sfx.win();
+  else if (has('heaven')) sfx.heaven();
+  else if (has('kill')) sfx.kill();
+  else if (has('born')) sfx.born();
+  else if (has('block')) sfx.block();
+}
+
+/** Dev only (?testdice): choose the dice instead of rolling, to try rules by hand. */
+function TestDice({ count, onRoll }: { count: number; onRoll: (dice: number[]) => void }) {
+  const [first, setFirst] = useState<number | null>(null);
+  const pick = (n: number) => {
+    if (count === 1) return onRoll([n]);
+    if (first === null) return setFirst(n);
+    setFirst(null);
+    onRoll([first, n]);
+  };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 8, borderRadius: 12, border: '2px dashed #F2C14E' }}>
+      <span style={{ fontSize: 12, fontWeight: 900, textTransform: 'uppercase', letterSpacing: 1 }}>
+        Test {first === null ? '' : `${first} +`}
+      </span>
+      {[1, 2, 3, 4, 5, 6].map((n) => (
+        <button
+          key={n}
+          onClick={() => pick(n)}
+          style={{ flex: 1, minHeight: 40, borderRadius: 8, border: '2px solid #1B1714', background: '#F4ECDA', fontWeight: 900, fontSize: 16 }}
+        >
+          {n}
+        </button>
+      ))}
+    </div>
+  );
+}

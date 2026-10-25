@@ -5,6 +5,7 @@ export const PREFS_KEY = 'ludi.prefs.v1';
 
 export interface Prefs {
   patois: boolean;
+  muted: boolean;
   /** Board for the current (or last) game. */
   themeId: ThemeId;
   rules: Rules;
@@ -16,6 +17,7 @@ export interface Prefs {
 
 export const DEFAULT_PREFS: Prefs = {
   patois: true,
+  muted: false,
   themeId: DEFAULT_THEME,
   rules: DEFAULT_RULES,
   names: {},

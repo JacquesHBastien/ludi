@@ -37,7 +37,8 @@ export type Moment =
   | { kind: 'block'; color: Color; count: number }
   | { kind: 'heaven'; color: Color; home: number };
 
-/** The one big moment worth showing for an action, most important first: heaven, kill, block, born. */
+/** The one big moment worth showing for an action, most important first: heaven, kill, born, block.
+ * (Borning two men on a double 6 makes a block too; "Yuh born!" is the bigger moment.) */
 export function pickMoment(after: GameState, actor: Color): Moment | null {
   const ev = after.events;
   const find = <T extends GameEvent['type']>(type: T) =>
@@ -47,13 +48,13 @@ export function pickMoment(after: GameState, actor: Color): Moment | null {
   if (heaven) return { kind: 'heaven', color: actor, home: after.men[actor].filter((p) => p === HEAVEN).length };
   const kill = find('kill');
   if (kill) return { kind: 'kill', color: actor, victim: kill.victim, count: kill.count };
-  const block = find('block');
-  if (block) return { kind: 'block', color: actor, count: block.count };
   const born = find('born');
   if (born) {
     const rollAgain = after.turn.color === actor && after.turn.phase === 'roll';
     return { kind: 'born', color: actor, count: born.count, rollAgain };
   }
+  const block = find('block');
+  if (block) return { kind: 'block', color: actor, count: block.count };
   return null;
 }
 
