@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Ludi app icon: a small Roots board. Colors from design/themes.json (roots). -->
+  <!-- Full-bleed square: iOS and Android round the corners themselves. -->
+  <rect width="512" height="512" fill="#17110D"/>
+  <rect x="44" y="44" width="424" height="424" rx="10" fill="#120D0A"/>
+
+  <!-- Yards: St. Elizabeth (red), St. Andrew (gold), St. Mary (green), St. Ann (black) -->
+  <rect x="50" y="50" width="140" height="140" rx="6" fill="#B5232A"/>
+  <rect x="322" y="50" width="140" height="140" rx="6" fill="#E8B21C"/>
+  <rect x="322" y="322" width="140" height="140" rx="6" fill="#2F7D32"/>
+  <rect x="50" y="322" width="140" height="140" rx="6" fill="#1B1714" stroke="#3A2E24" stroke-width="3"/>
+
+  <!-- Arms: home-lane bars in the track's color cycle -->
+  <g>
+    <rect x="198" y="50" width="116" height="28" rx="3" fill="#EFE3C8"/>
+    <rect x="198" y="86" width="116" height="28" rx="3" fill="#B5232A"/>
+    <rect x="198" y="122" width="116" height="28" rx="3" fill="#2F7D32"/>
+    <rect x="198" y="158" width="116" height="32" rx="3" fill="#B98A5A"/>
+
+    <rect x="198" y="434" width="116" height="28" rx="3" fill="#E8B21C"/>
+    <rect x="198" y="398" width="116" height="28" rx="3" fill="#1B1714" stroke="#3A2E24" stroke-width="2"/>
+    <rect x="198" y="362" width="116" height="28" rx="3" fill="#2F7D32"/>
+    <rect x="198" y="322" width="116" height="32" rx="3" fill="#B98A5A"/>
+
+    <rect x="50" y="198" width="28" height="116" rx="3" fill="#2F7D32"/>
+    <rect x="86" y="198" width="28" height="116" rx="3" fill="#E8B21C"/>
+    <rect x="122" y="198" width="28" height="116" rx="3" fill="#EFE3C8"/>
+    <rect x="158" y="198" width="32" height="116" rx="3" fill="#B98A5A"/>
+
+    <rect x="434" y="198" width="28" height="116" rx="3" fill="#B5232A"/>
+    <rect x="398" y="198" width="28" height="116" rx="3" fill="#1B1714" stroke="#3A2E24" stroke-width="2"/>
+    <rect x="362" y="198" width="28" height="116" rx="3" fill="#E8B21C"/>
+    <rect x="322" y="198" width="32" height="116" rx="3" fill="#B98A5A"/>
+  </g>
+
+  <!-- Heaven: four triangles and the gold X, cut flush to the square -->
+  <g transform="translate(198 198) scale(29)">
+    <polygon points="0,0 2,2 0,4" fill="#B5232A"/>
+    <polygon points="0,0 4,0 2,2" fill="#C9960F"/>
+    <polygon points="4,0 4,4 2,2" fill="#2F7D32"/>
+    <polygon points="0,4 4,4 2,2" fill="#1B1714"/>
+    <polygon points="0,0 0.3,0 4,3.7 4,4 3.7,4 0,0.3" fill="#E8B21C"/>
+    <polygon points="4,0 4,0.3 0.3,4 0,4 0,3.7 3.7,0" fill="#E8B21C"/>
+    <circle cx="2" cy="2" r="0.62" fill="#EFE3C8" stroke="#120D0A" stroke-width="0.08"/>
+  </g>
+
+  <!-- A red bottle cap with its diamond, waiting in the St. Elizabeth yard -->
+  <g transform="translate(120 120)">
+    <circle r="50" fill="#000" opacity="0.35" cy="5"/>
+    <circle r="46" fill="#B5232A" stroke="#1B1714" stroke-width="11" stroke-dasharray="7 5"/>
+    <circle r="31" fill="none" stroke="#1B1714" stroke-opacity="0.55" stroke-width="3.5"/>
+    <path d="M0 -24 L24 0 L0 24 L-24 0 Z" fill="#F4E9D4"/>
+  </g>
+</svg>
