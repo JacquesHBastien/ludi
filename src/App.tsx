@@ -43,7 +43,7 @@ export default function App() {
         initial={prefs}
         onBack={() => setScreen('home')}
         onStart={(r: SetupResult) => {
-          setPrefs({ ...prefs, themeId: r.themeId, rules: r.rules, names: r.typed, colors: r.seats.map((s) => s.color) });
+          setPrefs({ ...prefs, themeId: r.themeId, rules: r.rules, names: r.typed });
           start(
             r.seats.map((s) => ({ id: s.color, name: s.name, color: s.color })),
             r.rules,

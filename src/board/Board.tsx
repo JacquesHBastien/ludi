@@ -33,6 +33,8 @@ export interface BoardProps {
   names?: Partial<Record<Color, string>>;
   /** Men in mid-move: hidden from `from` and drawn hopping along `path` instead. */
   moving?: Moving;
+  /** Width of the dark frame around the board, in px. Small previews use a thinner frame. */
+  frame?: number;
 }
 
 export interface Moving {
@@ -58,7 +60,7 @@ interface Piece {
   label: string;
 }
 
-export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving }: BoardProps) {
+export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving, frame = 9 }: BoardProps) {
   const id = useId();
   const glowId = `${id}glow`;
   const shadowId = `${id}shadow`;
@@ -72,8 +74,8 @@ export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving
       style={{
         backgroundColor: theme.frame,
         backgroundImage: GRAIN.dark,
-        padding: 9,
-        borderRadius: 8,
+        padding: frame,
+        borderRadius: frame < 9 ? 6 : 8,
         boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.06), 0 8px 0 rgba(0,0,0,0.35), 0 16px 28px rgba(0,0,0,0.4)',
       }}
     >

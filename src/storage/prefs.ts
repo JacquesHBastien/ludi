@@ -11,8 +11,6 @@ export interface Prefs {
   rules: Rules;
   /** Names typed in setup, remembered for next time. */
   names: Partial<Record<Color, string>>;
-  /** Colors picked in setup last time. */
-  colors: Color[];
 }
 
 export const DEFAULT_PREFS: Prefs = {
@@ -21,7 +19,6 @@ export const DEFAULT_PREFS: Prefs = {
   themeId: DEFAULT_THEME,
   rules: DEFAULT_RULES,
   names: {},
-  colors: ['red', 'gold', 'green', 'black'],
 };
 
 export function loadPrefs(): Prefs {

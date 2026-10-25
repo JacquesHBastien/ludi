@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { COLORS, isDiagonal, type Color, type Rules } from '../../engine';
+import { Board } from '../../board/Board';
 import { CapIcon } from '../../board/Cap';
 import { HIGHLIGHT, THEME_IDS, getTheme, type ThemeId } from '../../theme/themes';
 import { IconButton, PrimaryButton, Screen, SectionLabel } from '../kit';
@@ -15,10 +16,12 @@ export interface SetupResult {
 }
 
 interface SetupProps {
-  initial: { themeId: ThemeId; rules: Rules; names: Partial<Record<Color, string>>; colors: Color[] };
+  initial: { themeId: ThemeId; rules: Rules; names: Partial<Record<Color, string>> };
   onBack: () => void;
   onStart: (result: SetupResult) => void;
 }
+
+const NO_MEN: Record<Color, number[]> = { red: [], gold: [], green: [], black: [] };
 
 const panel = {
   borderRadius: 12,
@@ -30,7 +33,9 @@ export function Setup({ initial, onBack, onStart }: SetupProps) {
   const [themeId, setThemeId] = useState(initial.themeId);
   const [rules, setRules] = useState(initial.rules);
   const [names, setNames] = useState(initial.names);
-  const [colors, setColors] = useState<Color[]>(initial.colors.length >= 2 ? initial.colors : [...COLORS]);
+  // Everyone starts as an empty "Add a player" row; the board comes first.
+  const [colors, setColors] = useState<Color[]>([]);
+  const [justAdded, setJustAdded] = useState<Color | null>(null);
   const theme = getTheme(themeId);
 
   const playing = COLORS.filter((c) => colors.includes(c));
@@ -63,6 +68,48 @@ export function Setup({ initial, onBack, onStart }: SetupProps) {
       </div>
 
       <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <SectionLabel>Pick a board</SectionLabel>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, paddingTop: 4 }}>
+          {THEME_IDS.map((id) => {
+            const t = getTheme(id);
+            const on = id === themeId;
+            return (
+              <button
+                key={id}
+                onClick={() => setThemeId(id)}
+                aria-pressed={on}
+                aria-label={`${t.name} board`}
+                style={{
+                  position: 'relative',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 7,
+                  alignItems: 'stretch',
+                  padding: 7,
+                  borderRadius: 14,
+                  cursor: 'pointer',
+                  color: ROOTS.ink,
+                  textAlign: 'center',
+                  ...(on
+                    ? { background: '#17110D', border: '2.5px solid #E8B21C', boxShadow: '0 0 0 2px rgba(232,178,28,0.25)' }
+                    : { background: 'rgba(0,0,0,0.28)', border: '2.5px solid rgba(255,255,255,0.08)', opacity: 0.9 }),
+                }}
+              >
+                {t.exclusive && <ExclusiveBadge />}
+                {/* The real board, empty, so the preview always matches what you play on. */}
+                <div aria-hidden="true" style={{ pointerEvents: 'none' }}>
+                  <Board theme={t} seats={[]} men={NO_MEN} frame={4} />
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {t.name}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <SectionLabel>Who's playing</SectionLabel>
         {COLORS.map((c) => {
           const seat = seatInfo(theme, c);
@@ -72,7 +119,10 @@ export function Setup({ initial, onBack, onStart }: SetupProps) {
             return (
               <button
                 key={c}
-                onClick={() => setColors([...colors, c])}
+                onClick={() => {
+                  setColors([...colors, c]);
+                  setJustAdded(c);
+                }}
                 style={{
                   ...panel,
                   border: `1.5px dashed ${ROOTS.trim}`,
@@ -110,6 +160,7 @@ export function Setup({ initial, onBack, onStart }: SetupProps) {
                   placeholder={seat.colorName}
                   maxLength={16}
                   autoComplete="off"
+                  autoFocus={justAdded === c}
                   onChange={(e) => setNames({ ...names, [c]: e.target.value })}
                   style={{
                     background: 'transparent',
@@ -147,50 +198,6 @@ export function Setup({ initial, onBack, onStart }: SetupProps) {
             </div>
           );
         })}
-      </section>
-
-      <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <SectionLabel>Board</SectionLabel>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, paddingTop: 4 }}>
-          {THEME_IDS.map((id) => {
-            const t = getTheme(id);
-            const on = id === themeId;
-            return (
-              <button
-                key={id}
-                onClick={() => setThemeId(id)}
-                aria-pressed={on}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 6,
-                  alignItems: 'flex-start',
-                  padding: '8px 10px',
-                  minHeight: 56,
-                  borderRadius: 12,
-                  cursor: 'pointer',
-                  color: ROOTS.ink,
-                  textAlign: 'left',
-                  ...(on
-                    ? { background: '#17110D', border: '2.5px solid #E8B21C', boxShadow: '0 0 0 2px rgba(232,178,28,0.25)' }
-                    : { background: 'rgba(0,0,0,0.28)', border: '2.5px solid rgba(255,255,255,0.08)' }),
-                }}
-              >
-                {t.exclusive && <ExclusiveBadge />}
-                <div style={{ display: 'flex', gap: 3, height: 18, width: '100%' }} aria-hidden="true">
-                  {t.cycle.map((c, i) => (
-                    <div
-                      key={i}
-                      style={{ flex: 1, background: c, borderRadius: 2, boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.5)' }}
-                    />
-                  ))}
-                </div>
-                <div style={{ fontSize: 14, fontWeight: 900, whiteSpace: 'nowrap' }}>{t.name}</div>
-              </button>
-            );
-          })}
-        </div>
       </section>
 
       <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
