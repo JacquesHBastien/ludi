@@ -1,6 +1,9 @@
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { Theme } from '../theme/themes';
 import { GRAIN, HIGHLIGHT } from '../theme/themes';
 import { DARK_INK } from './style';
+import { sfx } from './sound';
+import { shakePower } from './throw';
 
 const FACES: Record<number, number[]> = {
   1: [0, 0, 0, 0, 1, 0, 0, 0, 0],
@@ -52,14 +55,14 @@ interface TrayProps {
   dice: DieView[];
   /** The dice are out of the tray, flying over the board: show their empty slots. */
   rolling?: boolean;
-  /** Tap the tray to roll. */
-  onRoll?: () => void;
+  /** Hold the tray to shake the dice, let go to throw. Called with the throw power. */
+  onThrow?: (power: number) => void;
   /** Tap one die to pick it. */
   onPick?: (index: number) => void;
 }
 
 /** The sunken dice tray from the mockup. The whole tray is the roll button when rolling is allowed. */
-export function DiceTray({ theme, dice, rolling, onRoll, onPick }: TrayProps) {
+export function DiceTray({ theme, dice, rolling, onThrow, onPick }: TrayProps) {
   const tray = {
     display: 'flex',
     gap: 10,
@@ -81,19 +84,7 @@ export function DiceTray({ theme, dice, rolling, onRoll, onPick }: TrayProps) {
       </div>
     );
   }
-  if (onRoll) {
-    return (
-      <button
-        onClick={onRoll}
-        aria-label="Roll the dice"
-        style={{ ...tray, cursor: 'pointer', animation: 'ludi-pulse 1.4s ease-in-out infinite', outline: `2px solid ${HIGHLIGHT}`, outlineOffset: 2 }}
-      >
-        {dice.map((d, i) => (
-          <Die key={i} {...d} />
-        ))}
-      </button>
-    );
-  }
+  if (onThrow) return <ShakeTray tray={tray} dice={dice} onThrow={onThrow} />;
   return (
     <div style={tray}>
       {dice.map((d, i) =>
@@ -111,5 +102,83 @@ export function DiceTray({ theme, dice, rolling, onRoll, onPick }: TrayProps) {
         ),
       )}
     </div>
+  );
+}
+
+const buzz = (ms: number | number[]) => {
+  try {
+    navigator.vibrate?.(ms);
+  } catch {
+    // iPhones don't let web pages vibrate
+  }
+};
+
+/** The tray as the dice cup: press and hold to shake (rattle, wobble, buzz), let go to throw. */
+function ShakeTray({ tray, dice, onThrow }: { tray: object; dice: DieView[]; onThrow: (power: number) => void }) {
+  const [shaking, setShaking] = useState(0);
+  const held = useRef<{ start: number; timer: ReturnType<typeof setInterval> } | null>(null);
+  useEffect(() => () => clearInterval(held.current?.timer), []);
+
+  const start = (e: ReactPointerEvent) => {
+    if (held.current) return;
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // keep going without capture
+    }
+    const began = performance.now();
+    setShaking(0.3);
+    const timer = setInterval(() => {
+      const p = shakePower(performance.now() - began);
+      setShaking(p);
+      sfx.shake(p);
+      buzz(10 + Math.round(p * 12));
+    }, 120);
+    held.current = { start: began, timer };
+  };
+  const release = () => {
+    const h = held.current;
+    if (!h) return;
+    clearInterval(h.timer);
+    held.current = null;
+    setShaking(0);
+    buzz(30);
+    onThrow(shakePower(performance.now() - h.start));
+  };
+
+  return (
+    <button
+      aria-label="Hold to shake the dice, let go to throw"
+      onPointerDown={start}
+      onPointerUp={release}
+      onPointerCancel={release}
+      onContextMenu={(e) => e.preventDefault()}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onThrow(1);
+        }
+      }}
+      style={{
+        ...tray,
+        cursor: 'pointer',
+        animation: shaking ? undefined : 'ludi-pulse 1.4s ease-in-out infinite',
+        outline: `2px solid ${HIGHLIGHT}`,
+        outlineOffset: 2,
+        touchAction: 'none',
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        WebkitTouchCallout: 'none',
+      }}
+    >
+      {dice.map((d, i) => (
+        <div
+          key={i}
+          style={{ animation: shaking ? `ludi-shake ${Math.max(0.08, 0.22 - shaking * 0.09)}s linear infinite` : undefined }}
+        >
+          <Die {...d} />
+        </div>
+      ))}
+    </button>
   );
 }

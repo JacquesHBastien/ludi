@@ -37,8 +37,8 @@ interface GameProps {
 
 type View = 'handoff' | 'play' | 'turnOver';
 
-/** How long the dice spend flying over the board. */
-const ROLL_MS = 1700;
+/** How long the dice spend flying over the board: a soft lob is quick, a hard shake flies longer. */
+const flightMs = (power: number) => Math.min(2400, Math.max(1000, 1000 + 850 * power));
 
 const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -70,7 +70,7 @@ export function Game(props: GameProps) {
   const { turn } = game;
   const legal = legalMoves(game);
 
-  function roll(dice: number[]) {
+  function roll(dice: number[], power = 1) {
     if (busy) return;
     const before = game;
     const after = applyAction(before, { type: 'roll', dice });
@@ -81,10 +81,11 @@ export function Game(props: GameProps) {
     }
     const tray = trayRef.current?.getBoundingClientRect();
     const board = boardRef.current?.getBoundingClientRect();
-    const flight = tray && board ? { values: dice, tray, board, duration: ROLL_MS } : null;
-    sfx.roll(ROLL_MS / 1000);
+    const duration = flightMs(power);
+    const flight = tray && board ? { values: dice, tray, board, duration, power } : null;
+    sfx.roll(duration / 1000);
     setBusy({ kind: 'roll', flight });
-    timer.current = setTimeout(() => settle(before, after, after.events), ROLL_MS);
+    timer.current = setTimeout(() => settle(before, after, after.events), duration);
   }
 
   /** Play one move, or two on the same man (both dice), as a single hop. */
@@ -143,7 +144,8 @@ export function Game(props: GameProps) {
   useEffect(() => {
     if (!botLevel || view !== 'play' || busy || moment || results || game.status !== 'playing') return;
     if (game.turn.phase === 'roll') {
-      const t = setTimeout(() => roll(rollDice(game.rules.diceMode)), 900);
+      // Computers give the cup a medium shake.
+      const t = setTimeout(() => roll(rollDice(game.rules.diceMode), 0.6 + Math.random() * 0.5), 900);
       return () => clearTimeout(t);
     }
     const m = chooseMove(game, botLevel);
@@ -335,7 +337,7 @@ export function Game(props: GameProps) {
               theme={theme}
               dice={dice}
               rolling={busy?.kind === 'roll'}
-              onRoll={playing && turn.phase === 'roll' ? () => roll(rollDice(game.rules.diceMode)) : undefined}
+              onThrow={playing && turn.phase === 'roll' ? (power) => roll(rollDice(game.rules.diceMode), power) : undefined}
               onPick={canPick ? togglePick : undefined}
             />
           </div>
@@ -369,7 +371,7 @@ export function Game(props: GameProps) {
                   ? 'Rolling…'
                   : lastRoll?.color === turn.color && lastRoll.dice.includes(6)
                     ? 'Six! Roll again.'
-                    : 'Tap the dice to roll.'}
+                    : 'Hold the dice to shake them, then let go.'}
               </HintTitle>
               <HintBody>
                 {lastRoll?.color === turn.color && lastRoll.noMoves

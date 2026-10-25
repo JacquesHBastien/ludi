@@ -55,7 +55,7 @@ The `.dc.html` files are Claude Design canvas files. They are **visual reference
 - Heaven-less draw only applies if nobody has finished yet.
 
 ## Planned next (agreed with Jacques, 2026-10-25)
-- Dice throw style: try the options at `/ludi/dice/` (Tap, Hold & shake, Flick, Shake phone), then add the favourite to the game as a setting.
+- Dice throw style: decided 2026-10-25, Hold & shake is the game's roll (no power meter; a quick tap is a soft throw). The `/ludi/dice/` lab stays for reference.
 - Competitive features, all approved except revenge (skipped for now):
   - Kill tally per player in the player strip.
   - Rotating kill taunts, with Patois and plain-English versions.
