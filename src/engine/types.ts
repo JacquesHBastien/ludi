@@ -77,6 +77,20 @@ export interface GameState {
   result: GameResult | null;
   /** What happened during the last action, for the UI's big moments and sounds. */
   events: GameEvent[];
+  /** Running tallies for the kill count, rivalries and end-of-game awards. */
+  stats: GameStats;
+}
+
+export interface GameStats {
+  /** Men each color has killed. */
+  kills: Record<Color, number>;
+  /** Times each color has had a man killed (a block counts each man). */
+  killed: Record<Color, number>;
+  /** killsBy[killer][victim]: men the killer has sent home, per victim. */
+  killsBy: Record<Color, Partial<Record<Color, number>>>;
+  /** Dice that came up 6, and dice rolled, per color. */
+  sixes: Record<Color, number>;
+  dice: Record<Color, number>;
 }
 
 export interface GameSetup {

@@ -67,7 +67,7 @@ export function tapTargets(state: GameState, picked: number[]): { from: Progress
 }
 
 export type Moment =
-  | { kind: 'kill'; color: Color; victim: Color; count: number }
+  | { kind: 'kill'; color: Color; victim: Color; count: number; bounty?: boolean; taunt?: string }
   | { kind: 'born'; color: Color; count: number; rollAgain: boolean }
   | { kind: 'block'; color: Color; count: number }
   | { kind: 'heaven'; color: Color; home: number };

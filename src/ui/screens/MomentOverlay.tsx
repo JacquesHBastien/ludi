@@ -37,14 +37,20 @@ export function MomentOverlay({ theme, game, rules, moment, patois, onDone }: Mo
   let line: string;
   let sub: string;
   let cta: string;
+  let taunt: string | undefined;
 
   switch (moment.kind) {
     case 'kill': {
       const victim = seatInfo(theme, moment.victim, game);
       accent = theme.players.red;
       caps = [cap(moment.victim, 18, 30, 64, { transform: 'rotate(-24deg)', opacity: 0.85 }), cap(moment.color, 92, 6, 92)];
-      shout = t.killShout;
-      line = moment.count > 1 ? `${me.name} killed ${victim.name}'s block.` : `${me.name} killed ${victim.name}'s man.`;
+      shout = moment.bounty ? t.bountyShout : t.killShout;
+      line = moment.bounty
+        ? t.bountyLine(victim.name)
+        : moment.count > 1
+          ? `${me.name} killed ${victim.name}'s block.`
+          : `${me.name} killed ${victim.name}'s man.`;
+      taunt = moment.taunt;
       sub = t.killSub(victim.yard);
       if (moment.count > 1) sub = `${CountWord(moment.count)} men go back. ${sub}`;
       cta = 'Keep going';
@@ -111,6 +117,7 @@ export function MomentOverlay({ theme, game, rules, moment, patois, onDone }: Mo
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={display(shout.length > 10 ? 52 : 64, { lineHeight: 0.95, color: accent })}>{shout}</div>
+          {taunt && <div style={display(30, { lineHeight: 1.05, color: theme.callout })}>“{taunt}”</div>}
           <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1.35 }}>{line}</div>
           <div style={{ fontSize: 15, fontWeight: 600, opacity: 0.85, lineHeight: 1.35 }}>{sub}</div>
         </div>

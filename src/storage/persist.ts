@@ -1,4 +1,4 @@
-import type { GameState } from '../engine';
+import { statsOf, type GameState } from '../engine';
 
 export const SAVE_KEY = 'ludi.passAndPlay.v1';
 
@@ -26,7 +26,9 @@ export function loadGame(store: KeyValueStore | null = browserStorage()): GameSt
     if (!raw) return null;
     const state = JSON.parse(raw) as GameState;
     // Older saves count squares differently; drop them rather than misplace men.
-    return state.version === 2 ? state : null;
+    if (state.version !== 2) return null;
+    // Games saved before stats existed start counting from here.
+    return state.stats ? state : { ...state, stats: statsOf(state) };
   } catch {
     return null;
   }

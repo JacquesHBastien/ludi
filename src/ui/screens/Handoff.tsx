@@ -11,11 +11,13 @@ interface HandoffProps {
   /** Whose turn just ended. Null when the game is starting or coming back after a reload. */
   doneBy: Color | null;
   patois: boolean;
+  /** A rivalry or bounty line to fire up the next player. */
+  note?: string | null;
   onReady: () => void;
 }
 
 /** Full screen "Pass the phone" between turns. The board stays hidden until the next player taps. */
-export function Handoff({ theme, game, doneBy, patois, onReady }: HandoffProps) {
+export function Handoff({ theme, game, doneBy, patois, note, onReady }: HandoffProps) {
   const next = seatInfo(theme, game.turn.color, game);
   const kicker = doneBy
     ? `${seatInfo(theme, doneBy, game).name}'s turn is done`
@@ -56,6 +58,23 @@ export function Handoff({ theme, game, doneBy, patois, onReady }: HandoffProps) 
             You're {next.colorName}, the {next.shapeWord} men
           </div>
         </div>
+        {note && (
+          <div
+            role="note"
+            style={{
+              padding: '10px 14px',
+              borderRadius: 12,
+              background: 'rgba(181,35,42,0.25)',
+              border: '1.5px solid #B5232A',
+              fontSize: 16,
+              fontWeight: 800,
+              lineHeight: 1.35,
+              maxWidth: 320,
+            }}
+          >
+            {note}
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14, width: '100%' }}>

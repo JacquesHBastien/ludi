@@ -454,6 +454,28 @@ describe('Winning', () => {
   });
 });
 
+describe('Stats', () => {
+  it('counts kills per killer and victim, block kills as two', () => {
+    let s = play(roll(scenario({ rules: ONE, men: { red: [10], gold: [at('gold', 13)] } }), 3), single(10, 3));
+    expect(s.stats.kills.red).toBe(1);
+    expect(s.stats.killed.gold).toBe(1);
+    expect(s.stats.killsBy.red.gold).toBe(1);
+
+    s = play(roll(scenario({ rules: TWO, men: { red: [10, 10], green: [at('green', 14), at('green', 14)] } }), 4, 4), pair(10, 4));
+    expect(s.stats.kills.red).toBe(2);
+    expect(s.stats.killsBy.red.green).toBe(2);
+  });
+
+  it('counts dice and sixes per color', () => {
+    let s = roll(scenario({ rules: TWO, men: { red: [10] } }), 6, 6);
+    expect(s.stats.sixes.red).toBe(2);
+    expect(s.stats.dice.red).toBe(2);
+    s = roll(play(play(s, single(10, 6)), single(16, 6)), 6, 2);
+    expect(s.stats.sixes.red).toBe(3);
+    expect(s.stats.dice.red).toBe(4);
+  });
+});
+
 describe('Engine purity', () => {
   it('never mutates the state it is given', () => {
     const s = roll(scenario({ rules: TWO, men: { red: [10, 10], gold: [at('gold', 14)] } }), 4, 4);

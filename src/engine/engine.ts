@@ -1,5 +1,5 @@
 import { COLORS, HEAVEN, LAST_TRACK, MEN_PER_COLOR, START, YARD, isOnTrack, trackIndexOf } from './board';
-import type { Action, Color, GameEvent, GameSetup, GameState, Move, Progress, Rules } from './types';
+import type { Action, Color, GameEvent, GameSetup, GameState, GameStats, Move, Progress, Rules } from './types';
 
 export const DEFAULT_RULES: Rules = { diceMode: 'two', heavenless: false };
 
@@ -51,6 +51,7 @@ export function createGame(setup: GameSetup): GameState {
     placements: [],
     status: 'playing',
     result: null,
+    stats: emptyStats(),
     events: [],
   };
 }
@@ -106,10 +107,16 @@ function roll(state: GameState, dice: number[]): GameState {
   if (dice.length !== want) throw new Error(`Expected ${want} dice, got ${dice.length}`);
   if (dice.some((d) => !Number.isInteger(d) || d < 1 || d > 6)) throw new Error('Dice must be 1 to 6');
 
+  const stats = statsOf(state);
   const next: GameState = {
     ...state,
     turn: { ...turn, phase: 'move', dice: [...dice], rolled: [...dice], extraRoll: dice.includes(6) },
     events: [{ type: 'rolled', color: turn.color, dice: [...dice] }],
+    stats: {
+      ...stats,
+      sixes: { ...stats.sixes, [turn.color]: stats.sixes[turn.color] + dice.filter((d) => d === 6).length },
+      dice: { ...stats.dice, [turn.color]: stats.dice[turn.color] + dice.length },
+    },
   };
   if (legalMoves(next).length > 0) return next;
   next.events.push({ type: 'noMoves', color: turn.color });
@@ -128,6 +135,7 @@ function move(state: GameState, m: Move): GameState {
     men,
     turn: { ...state.turn, dice: spendDice(state.turn.dice, m) },
     events,
+    stats: countKills(statsOf(state), events),
   };
 
   next = checkGameEnd(next);
@@ -306,4 +314,37 @@ function spendDice(dice: number[], m: Move): number[] {
   const rest = [...dice];
   rest.splice(rest.indexOf(m.die), 1);
   return rest;
+}
+
+// ---------------------------------------------------------------------------
+// Stats
+
+function emptyStats(): GameStats {
+  const zero = () => Object.fromEntries(COLORS.map((c) => [c, 0])) as Record<Color, number>;
+  return {
+    kills: zero(),
+    killed: zero(),
+    killsBy: Object.fromEntries(COLORS.map((c) => [c, {}])) as GameStats['killsBy'],
+    sixes: zero(),
+    dice: zero(),
+  };
+}
+
+/** Stats for a state, filling them in for games saved before stats existed. */
+export function statsOf(state: GameState): GameStats {
+  return state.stats ?? emptyStats();
+}
+
+function countKills(stats: GameStats, events: GameEvent[]): GameStats {
+  let out = stats;
+  for (const e of events) {
+    if (e.type !== 'kill') continue;
+    out = {
+      ...out,
+      kills: { ...out.kills, [e.color]: out.kills[e.color] + e.count },
+      killed: { ...out.killed, [e.victim]: out.killed[e.victim] + e.count },
+      killsBy: { ...out.killsBy, [e.color]: { ...out.killsBy[e.color], [e.victim]: (out.killsBy[e.color][e.victim] ?? 0) + e.count } },
+    };
+  }
+  return out;
 }

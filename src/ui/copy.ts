@@ -20,6 +20,18 @@ export function copy(patois: boolean) {
     heavenShout: patois ? 'Reach heaven!' : 'Home!',
     winShout: 'Run yard!',
     ready: patois ? 'Mi ready' : "I'm ready",
+    bountyShout: patois ? 'Bounty!' : 'Bounty!',
+    bountyLine: (who: string) =>
+      patois ? `${who} man did nearly reach home. Not again!` : `${who}'s man was nearly home. Not anymore!`,
+    bountyHunt: (who: string) =>
+      patois ? `Bounty: kill ${who} man before him reach home!` : `Bounty: you can kill ${who}'s man before he gets home!`,
+    bountyWatch: (who: string) =>
+      patois ? `${who} man close to home. Go fi him!` : `${who}'s man is close to home. Go get him!`,
+    bountyMine: patois ? 'Yuh man close to home. Everybody a come fi him!' : 'Your man is close to home. Everyone is coming for him!',
+    hunted: (who: string, n: number) =>
+      patois ? `${who} kill yuh ${n} time dis game.` : `${who} has killed you ${n} times this game.`,
+    hunter: (who: string, n: number) =>
+      patois ? `Yuh sen ${who} back a yard ${n} time. Keep it up!` : `You've sent ${who} home ${n} times. Keep it up!`,
   };
 }
 

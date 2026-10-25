@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Board, type Focus, type Moving } from '../../board/Board';
 import { CapIcon } from '../../board/Cap';
-import { HEAVEN, YARD, applyAction, legalMoves, type Color, type GameEvent, type GameState, type Move, type Progress } from '../../engine';
+import { HEAVEN, YARD, applyAction, legalMoves, statsOf, trackIndexOf, type Color, type GameEvent, type GameState, type Move, type Progress } from '../../engine';
 import { CAP, HIGHLIGHT, THEME_IDS, getTheme, type Theme, type ThemeId } from '../../theme/themes';
 import { copy } from '../copy';
 import { DiceTray, type DieView } from '../Dice';
@@ -11,6 +11,7 @@ import { Icons } from '../icons';
 import { display, seatInfo } from '../style';
 import { rollDice } from '../random';
 import { chooseMove } from '../../ai/bot';
+import { bounties, bountyKills, pickTaunt, rivalry } from '../compete';
 import { sfx } from '../sound';
 import { landing, nextColor, pickMoment, planTap, tapTargets, usableDice, usedFlags, type Moment } from '../turn';
 import { GameOver } from './GameOver';
@@ -64,6 +65,7 @@ export function Game(props: GameProps) {
   const trayRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lastTaunt = useRef<string | null>(null);
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const t = copy(patois);
@@ -124,6 +126,15 @@ export function Game(props: GameProps) {
       if (bornSeen.has(m.color)) m = null;
       else setBornSeen(new Set([...bornSeen, m.color]));
     }
+    if (m?.kind === 'kill') {
+      // Was the man killed carrying a bounty? Check the position before the move.
+      const kill = events.find((e) => e.type === 'kill');
+      const bounty =
+        kill?.type === 'kill' && bounties(before).some((b) => b.color === kill.victim && trackIndexOf(b.color, b.from) === kill.trackIndex);
+      const taunt = pickTaunt(patois, lastTaunt.current);
+      lastTaunt.current = taunt;
+      m = { ...m, bounty, taunt };
+    }
     setMoment(m);
 
     const firstWinner = before.placements.length === 0 && after.placements.length > 0;
@@ -169,6 +180,17 @@ export function Game(props: GameProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moment]);
 
+  /** A line to fire someone up at the start of their turn: their bounty, a grudge, or a bounty to chase. */
+  function turnNote(color: Color): string | null {
+    const name = (c: Color) => seatInfo(theme, c, game).name;
+    const hunted = bounties(game);
+    if (hunted.some((b) => b.color === color)) return t.bountyMine;
+    const r = rivalry(game, color);
+    if (r) return r.kind === 'hunted' ? t.hunted(name(r.other), r.count) : t.hunter(name(r.other), r.count);
+    const target = hunted.find((b) => b.color !== color);
+    return target ? t.bountyWatch(name(target.color)) : null;
+  }
+
   // --- Screens that replace the board ---------------------------------------------------------
 
   if (results && !moment) {
@@ -177,6 +199,7 @@ export function Game(props: GameProps) {
       <GameOver
         theme={theme}
         game={game}
+        patois={patois}
         onPlayAgain={onPlayAgain}
         onHome={onHome}
         onKeepPlaying={canContinue ? () => setResults(false) : undefined}
@@ -191,6 +214,7 @@ export function Game(props: GameProps) {
         game={game}
         doneBy={doneBy}
         patois={patois}
+        note={turnNote(game.turn.color)}
         onReady={() => {
           setView('play');
           setLastRoll(null);
@@ -297,6 +321,7 @@ export function Game(props: GameProps) {
           focus={focus}
           onTapSquare={playing ? tapSquare : undefined}
           active={view === 'play' ? turn.color : undefined}
+          bounties={bounties(game)}
         />
         <button
           onClick={onToggleCloseUp}
@@ -376,13 +401,20 @@ export function Game(props: GameProps) {
               <HintBody>
                 {lastRoll?.color === turn.color && lastRoll.noMoves
                   ? 'No man could move that time, but the 6 gives you another roll.'
-                  : game.men[turn.color].every((p) => p === YARD || p === HEAVEN)
-                    ? 'You need a 6 to born a man.'
-                    : 'Then tap a die, and the man it moves.'}
+                  : turnNote(turn.color) ??
+                    (game.men[turn.color].every((p) => p === YARD || p === HEAVEN)
+                      ? 'You need a 6 to born a man.'
+                      : 'Then tap a die, and the man it moves.')}
               </HintBody>
             </>
           ) : (
             <MoveHint
+              bounty={(() => {
+                const k = bountyKills(game, legal)[0];
+                if (!k) return null;
+                const victim = bounties(game).find((b) => b.color !== turn.color && trackIndexOf(b.color, b.from) === trackIndexOf(turn.color, landing([k])));
+                return victim ? t.bountyHunt(seatInfo(theme, victim.color, game).name) : null;
+              })()}
               chosen={chosenValues}
               left={usable.length}
               targets={targets.length}
@@ -468,6 +500,26 @@ function PlayerStrip({ theme, game, active }: { theme: Theme; game: GameState; a
               {s.name}
             </div>
             <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.9 }}>{s.home}/4 home</div>
+            {statsOf(game).kills[c] > 0 && (
+              <span
+                aria-label={`${statsOf(game).kills[c]} kills`}
+                style={{
+                  position: 'absolute',
+                  top: -7,
+                  left: -4,
+                  padding: '1px 6px',
+                  borderRadius: 999,
+                  background: '#B5232A',
+                  color: '#F4E9D4',
+                  border: '1.5px solid #1B1714',
+                  fontSize: 11,
+                  fontWeight: 900,
+                  lineHeight: '15px',
+                }}
+              >
+                ☠ {statsOf(game).kills[c]}
+              </span>
+            )}
             {game.players.find((p) => p.color === c)?.computer && (
               <span
                 title="Computer"
@@ -509,6 +561,7 @@ const HintBody = ({ children }: { children: ReactNode }) =>
 
 /** What to do next while choosing a move: pick a die, then a man. */
 function MoveHint({
+  bounty,
   chosen,
   left,
   targets,
@@ -516,6 +569,7 @@ function MoveHint({
   bornTwo,
   yardReady,
 }: {
+  bounty: string | null;
   chosen: number[];
   left: number;
   targets: number;
@@ -528,7 +582,9 @@ function MoveHint({
       <>
         <HintTitle>Tap a die, then the man it moves.</HintTitle>
         <HintBody>
-          {pairLegal
+          {bounty
+            ? `🎯 ${bounty}`
+            : pairLegal
             ? 'Tap both dice, then your block, to move it together.'
             : bornTwo
               ? 'Tap both sixes, then your yard, to born two men.'
@@ -687,7 +743,14 @@ function playSounds(before: GameState, after: GameState) {
   if (has('noMoves')) sfx.noMoves();
   else if (after.placements.length > before.placements.length) sfx.win();
   else if (has('heaven')) sfx.heaven();
-  else if (has('kill')) sfx.kill();
+  else if (has('kill')) {
+    sfx.kill();
+    try {
+      navigator.vibrate?.([60, 40, 140]); // Android only; iPhones don't let pages vibrate
+    } catch {
+      // ignore
+    }
+  }
   else if (has('born')) sfx.born();
   else if (has('block')) sfx.block();
 }

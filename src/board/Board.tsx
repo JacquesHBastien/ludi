@@ -46,6 +46,8 @@ export interface BoardProps {
   onTapSquare?: (to: Progress) => void;
   /** Whose turn it is: their men get a halo and everyone else's fade back a little. */
   active?: Color;
+  /** Men with a bounty on them get a red target. */
+  bounties?: { color: Color; from: Progress }[];
 }
 
 export interface Focus {
@@ -80,7 +82,7 @@ interface Piece {
   label: string;
 }
 
-export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving, frame = 9, focus, onTapSquare, active }: BoardProps) {
+export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving, frame = 9, focus, onTapSquare, active, bounties = [] }: BoardProps) {
   const id = useId();
   const glowId = `${id}glow`;
   const shadowId = `${id}shadow`;
@@ -143,6 +145,11 @@ export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving
                 emphasis={!active ? 'normal' : p.color === active ? 'mine' : 'faded'}
               />
             ))}
+            {ordered
+              .filter((p) => bounties.some((b) => b.color === p.color && b.from === p.from))
+              .map((p) => (
+                <BountyMark key={`${p.key}bounty`} at={p.at} size={p.size} />
+              ))}
             {moving && <Hopper key={moving.id} moving={moving} men={men} fill={theme.players[moving.color]} filter={shadowId} />}
             {focus && onTapSquare && <SquareHits focus={focus} onTap={onTapSquare} />}
             {onTapMan &&
@@ -172,6 +179,23 @@ export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving
         </div>
       </div>
     </div>
+  );
+}
+
+/** A red crosshair ring around a man worth hunting. */
+function BountyMark({ at, size }: { at: Point; size: number }) {
+  const r = size / 2 + 5;
+  const tick = (a: number) => {
+    const [dx, dy] = [Math.cos(a), Math.sin(a)];
+    return <line key={a} x1={at.x + dx * (r - 3)} y1={at.y + dy * (r - 3)} x2={at.x + dx * (r + 3)} y2={at.y + dy * (r + 3)} />;
+  };
+  return (
+    <g aria-hidden="true" stroke="#E8322A" strokeWidth={2} strokeLinecap="round" fill="none" style={{ pointerEvents: 'none' }}>
+      <circle cx={at.x} cy={at.y} r={r} strokeDasharray="4 3">
+        <animateTransform attributeName="transform" type="rotate" from={`0 ${at.x} ${at.y}`} to={`360 ${at.x} ${at.y}`} dur="6s" repeatCount="indefinite" />
+      </circle>
+      {[0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2].map(tick)}
+    </g>
   );
 }
 

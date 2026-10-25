@@ -5,18 +5,23 @@ import { copy } from '../copy';
 import { Ornament, PrimaryButton, Screen, SecondaryButton } from '../kit';
 import { display, seatInfo } from '../style';
 import { ranking } from '../turn';
+import { awards } from '../compete';
+import { statsOf } from '../../engine';
 
 interface GameOverProps {
   theme: Theme;
   game: GameState;
+  patois: boolean;
   onPlayAgain: () => void;
   onHome: () => void;
   /** Offered when someone has won but two or more players can still play for the other places. */
   onKeepPlaying?: () => void;
 }
 
+const AWARD_ICON = { butcher: '☠', ghost: '👻', unlucky: '🪦', sixes: '🎲' } as const;
+
 /** Winner with placings, or the heaven-less draw (GameOver.dc.html). */
-export function GameOver({ theme, game, onPlayAgain, onHome, onKeepPlaying }: GameOverProps) {
+export function GameOver({ theme, game, patois, onPlayAgain, onHome, onKeepPlaying }: GameOverProps) {
   const draw = game.result?.kind === 'draw';
   const order = ranking(game);
   const winner = seatInfo(theme, order[0]!, game);
@@ -74,11 +79,40 @@ export function GameOver({ theme, game, onPlayAgain, onHome, onKeepPlaying }: Ga
                 <div style={{ fontSize: 17, fontWeight: 900, overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
                 <div style={display(16, { opacity: 0.8 })}>{s.yard}</div>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 800, opacity: 0.9 }}>{s.home}/4 home</div>
+              <div style={{ fontSize: 14, fontWeight: 800, opacity: 0.9, textAlign: 'right' }}>
+                {s.home}/4 home
+                {statsOf(game).kills[c] > 0 && <div style={{ fontSize: 12, opacity: 0.85 }}>☠ {statsOf(game).kills[c]}</div>}
+              </div>
             </li>
           );
         })}
       </ol>
+
+      {awards(game, patois).length > 0 && (
+        <section aria-label="Awards" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+          {awards(game, patois).map((a) => (
+            <div
+              key={a.id}
+              style={{
+                padding: '10px 12px',
+                borderRadius: 14,
+                background: theme.frame,
+                border: `2px solid ${theme.trim}`,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 3,
+              }}
+            >
+              <div style={{ fontSize: 18, lineHeight: 1 }} aria-hidden="true">
+                {AWARD_ICON[a.id]}
+              </div>
+              <div style={display(22, { color: theme.callout })}>{a.title}</div>
+              <div style={{ fontSize: 15, fontWeight: 900 }}>{a.colors.map((c) => seatInfo(theme, c, game).name).join(' & ')}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, opacity: 0.85 }}>{a.detail}</div>
+            </div>
+          ))}
+        </section>
+      )}
 
       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {onKeepPlaying && (
