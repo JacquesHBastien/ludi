@@ -1,0 +1,46 @@
+import type { ReactNode } from 'react';
+
+const icon = (d: ReactNode, join = false) => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin={join ? 'round' : undefined}
+    aria-hidden="true"
+  >
+    {d}
+  </svg>
+);
+
+export const Icons = {
+  menu: icon(<path d="M4 7h16M4 12h16M4 17h16" />),
+  rules: icon(
+    <>
+      <path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z" />
+      <path d="M5 17a3 3 0 0 1 3-3h11" />
+    </>,
+    true,
+  ),
+  back: icon(<path d="M15 18l-6-6 6-6" />, true),
+  close: icon(<path d="M6 6l12 12M18 6L6 18" />),
+  phone: icon(
+    <>
+      <rect x="6" y="2" width="12" height="20" rx="3" />
+      <path d="M11 18h2" />
+    </>,
+    true,
+  ),
+  globe: icon(
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" />
+    </>,
+    true,
+  ),
+  join: icon(<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />, true),
+  plus: icon(<path d="M12 5v14M5 12h14" />),
+};

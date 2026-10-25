@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Game setup</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&amp;family=Nunito:wght@600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F2C14E}a:hover{color:#FFE29A}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #3A2416; background-image: repeating-linear-gradient(92deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 5px, rgba(255,255,255,0.02) 5px, rgba(255,255,255,0.02) 11px), repeating-linear-gradient(88deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0) 37px); color: #F4E9D4; font-family: 'Nunito', system-ui, sans-serif; display: flex; flex-direction: column; padding: 14px 16px 18px; gap: 12px; overflow: hidden">
+
+  <div style="display: flex; align-items: center; gap: 12px; height: 44px">
+    <a href="Home.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 10px; border: 2px solid #8A6A44; background: rgba(0,0,0,0.25); color: #F4E9D4; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <div style="font-family: 'Caveat Brush', cursive; font-size: 32px; line-height: 1">New game</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.8">Who's playing</div>
+    <sc-for list="{{players}}" as="p" hint-placeholder-count="4">
+      <div style="display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 6px; border-radius: 12px; background: rgba(0,0,0,0.28); border: 1.5px solid rgba(255,255,255,0.08)">
+        <div style="{{p.swatch}}">
+          <svg width="30" height="30" viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="10" cy="10" r="8.7" fill="{{p.color}}" stroke="{{p.edge}}" stroke-width="2.4" stroke-dasharray="1.5 1.1"/>
+            <g transform="translate(5 5) scale(0.5)"><path d="{{p.mark}}" fill="{{p.markFill}}"/></g>
+          </svg>
+        </div>
+        <div style="display: flex; flex-direction: column; flex: 1; min-width: 0">
+          <label for="{{p.id}}" style="font-family: 'Caveat Brush', cursive; font-size: 17px; line-height: 1; opacity: 0.85">{{p.parish}}</label>
+          <input id="{{p.id}}" value="{{p.name}}" style="background: transparent; border: none; border-bottom: 1.5px solid #8A6A44; color: #F4E9D4; font-size: 17px; font-weight: 800; padding: 3px 0; outline: none; width: 100%">
+        </div>
+        <button aria-label="{{p.removeLabel}}" style="width: 44px; height: 44px; border-radius: 10px; background: transparent; border: none; color: #F4E9D4; opacity: 0.7; display: flex; align-items: center; justify-content: center; cursor: pointer">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.8">Board</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <sc-for list="{{boards}}" as="b" hint-placeholder-count="4">
+        <button onClick="{{b.pick}}" aria-pressed="{{b.pressed}}" style="{{b.style}}">
+          <sc-if value="{{b.exclusive}}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; top: -9px; right: 8px; display: flex; align-items: center; gap: 4px; padding: 2px 8px 2px 6px; border-radius: 999px; background: #F2C14E; color: #1B1714; border: 1.5px solid #1B1714; font-size: 10px; font-weight: 900; letter-spacing: 0.8px; text-transform: uppercase">
+              <svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.5 7 .8-5.2 4.8 1.5 7L12 17.6 5.7 21.1l1.5-7L2 9.3l7-.8z" fill="#1B1714"/></svg>
+              Exclusive
+            </div>
+          </sc-if>
+          <div style="display: flex; gap: 3px; height: 18px; width: 100%" aria-hidden="true">
+            <sc-for list="{{b.swatches}}" as="sw" hint-placeholder-count="6">
+              <div style="{{sw.style}}"></div>
+            </sc-for>
+          </div>
+          <div style="font-size: 14px; font-weight: 900; white-space: nowrap">{{b.name}}</div>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.8">House rules</div>
+    <div style="border-radius: 12px; background: rgba(0,0,0,0.28); border: 1.5px solid rgba(255,255,255,0.08); display: flex; flex-direction: column">
+      <sc-for list="{{rules}}" as="r" hint-placeholder-count="2">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.07)">
+          <div style="display: flex; flex-direction: column; flex: 1; gap: 1px">
+            <div style="font-size: 16px; font-weight: 900">{{r.name}}</div>
+            <div style="font-size: 13px; font-weight: 600; opacity: 0.85; line-height: 1.3">{{r.desc}}</div>
+          </div>
+          <button role="switch" aria-checked="{{r.checked}}" aria-label="{{r.name}}" onClick="{{r.toggle}}" style="{{r.track}}">
+            <div style="{{r.knob}}"></div>
+          </button>
+        </div>
+      </sc-for>
+      <div style="padding: 10px 12px; font-size: 13px; font-weight: 700; opacity: 0.8; line-height: 1.35">Always on: blocks, every 6 rolls again, no safe squares on the track.</div>
+    </div>
+  </div>
+
+  <button style="margin-top: auto; height: 64px; border-radius: 16px; background: #E8B21C; color: #1B1714; border: 3px solid #1B1714; box-shadow: 0 6px 0 #1B1714; font-size: 21px; font-weight: 900; cursor: pointer">Start the game</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { board: 'Roots', twoDice: true, heavenless: false };
+  }
+  renderVals() {
+    var self = this;
+    var s = this.state;
+    var defs = [
+      { k: 'red', parish: 'St. Elizabeth', name: 'Auntie Bev', color: '#B5232A', mark: 'M10 2l8 8-8 8-8-8z', edge: '#1B1714', markFill: '#F4E9D4' },
+      { k: 'gold', parish: 'St. Andrew', name: 'Marlon', color: '#E8B21C', mark: 'M10 3l8 14H2z', edge: '#1B1714', markFill: '#1B1714' },
+      { k: 'green', parish: 'St. Mary', name: 'Keisha', color: '#2F7D32', mark: 'M10 3a7 7 0 1 0 0.01 0z', edge: '#1B1714', markFill: '#F4E9D4' },
+      { k: 'black', parish: 'St. Ann', name: 'Junior', color: '#1B1714', mark: 'M4 4h12v12H4z', edge: '#E8D9B8', markFill: '#E8B21C' }
+    ];
+    var players = defs.map(function (d) {
+      return Object.assign({}, d, {
+        id: 'name-' + d.k,
+        removeLabel: 'Remove ' + d.name,
+        swatch: 'width: 44px; height: 44px; border-radius: 10px; background: rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; flex-shrink: 0'
+      });
+    });
+    var boardDefs = [
+      { name: 'Roots', colors: ['#B5232A', '#E8B21C', '#2F7D32', '#1B1714', '#B98A5A', '#EFE3C8'] },
+      { name: 'Yard Classic', colors: ['#D8332A', '#F2C21B', '#5FA829', '#6FB7E3', '#F1EAD2', '#1D1A17'] },
+      { name: 'St. Croix Edition', exclusive: true, colors: ['#0F8C8C', '#E8604C', '#E9D3A7', '#F2C12E', '#1E3A6B', '#F7F2E7'] },
+      { name: 'Haitian Edition', exclusive: true, colors: ['#00209F', '#D21034', '#F5F1E8', '#F4B400', '#00843D', '#E94E8B'] }
+    ];
+    var boards = boardDefs.map(function (b) {
+      var on = s.board === b.name;
+      return {
+        name: b.name,
+        exclusive: !!b.exclusive,
+        pressed: on ? 'true' : 'false',
+        pick: function () { self.setState({ board: b.name }); },
+        swatches: b.colors.map(function (c) { return { style: 'flex: 1; background: ' + c + '; border-radius: 2px; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.5)' }; }),
+        style: 'position: relative; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 8px 10px; border-radius: 12px; cursor: pointer; color: #F4E9D4; text-align: left; ' +
+          (on ? 'background: #17110D; border: 2.5px solid #E8B21C; box-shadow: 0 0 0 2px rgba(232,178,28,0.25)' : 'background: rgba(0,0,0,0.28); border: 2.5px solid rgba(255,255,255,0.08)')
+      };
+    });
+    function sw(on) {
+      return {
+        track: 'width: 56px; height: 32px; border-radius: 16px; border: 2px solid #1B1714; padding: 2px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: ' + (on ? 'flex-end' : 'flex-start') + '; background: ' + (on ? '#2F7D32' : '#5A4A3C'),
+        knob: 'width: 24px; height: 24px; border-radius: 12px; background: #F4E9D4; box-shadow: 0 1px 2px rgba(0,0,0,0.4)'
+      };
+    }
+    var rules = [
+      Object.assign({ name: 'Two dice', desc: 'Use both dice every turn. Doubles move blocks.', checked: s.twoDice ? 'true' : 'false', toggle: function () { self.setState({ twoDice: !s.twoDice }); } }, sw(s.twoDice)),
+      Object.assign({ name: 'Heaven-less', desc: 'Draw once everybody has a man in heaven.', checked: s.heavenless ? 'true' : 'false', toggle: function () { self.setState({ heavenless: !s.heavenless }); } }, sw(s.heavenless))
+    ];
+    return { players: players, boards: boards, rules: rules };
+  }
+}
+</script>
+</body>
+</html>

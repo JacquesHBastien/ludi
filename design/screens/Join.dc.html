@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Join a game</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&amp;family=Nunito:wght@600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F2C14E}a:hover{color:#FFE29A}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #3A2416; background-image: repeating-linear-gradient(92deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 5px, rgba(255,255,255,0.02) 5px, rgba(255,255,255,0.02) 11px), repeating-linear-gradient(88deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0) 37px); color: #F4E9D4; font-family: 'Nunito', system-ui, sans-serif; display: flex; flex-direction: column; padding: 14px 16px 18px; gap: 22px; overflow: hidden">
+
+  <div style="display: flex; align-items: center; gap: 12px; height: 44px">
+    <a href="Home.dc.html" aria-label="Back" style="width: 44px; height: 44px; border-radius: 10px; border: 2px solid #8A6A44; background: rgba(0,0,0,0.25); color: #F4E9D4; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <div style="font-family: 'Caveat Brush', cursive; font-size: 32px; line-height: 1">Join a game</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <label for="code" style="font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.8">Game code</label>
+    <input id="code" value="MANGO-42" style="height: 68px; border-radius: 14px; border: 2.5px solid #E8B21C; background: #17110D; color: #F4E9D4; font-size: 32px; font-weight: 900; letter-spacing: 6px; text-align: center; outline: none">
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 800; color: #9FD6A2">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>
+      Found Keisha's game · 2 of 4 seats taken
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <label for="your-name" style="font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.8">Your name</label>
+    <input id="your-name" value="Junior" style="height: 56px; border-radius: 14px; border: 2px solid #8A6A44; background: rgba(0,0,0,0.3); color: #F4E9D4; font-size: 20px; font-weight: 800; padding: 0 16px; outline: none">
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-size: 13px; font-weight: 900; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.8">Pick your yard</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <sc-for list="{{seats}}" as="s" hint-placeholder-count="4">
+        <button onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" disabled="{{s.taken}}" style="{{s.style}}">
+          <svg width="34" height="34" viewBox="0 0 20 20" aria-hidden="true">
+            <circle cx="10" cy="10" r="8.7" fill="{{s.color}}" stroke="{{s.edge}}" stroke-width="2.4" stroke-dasharray="1.5 1.1"/>
+            <g transform="translate(5 5) scale(0.5)"><path d="{{s.mark}}" fill="{{s.markFill}}"/></g>
+          </svg>
+          <div style="font-family: 'Caveat Brush', cursive; font-size: 20px; line-height: 1">{{s.parish}}</div>
+          <div style="font-size: 12px; font-weight: 800; opacity: 0.9">{{s.status}}</div>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+
+  <button style="margin-top: auto; height: 64px; border-radius: 16px; background: #E8B21C; color: #1B1714; border: 3px solid #1B1714; box-shadow: 0 6px 0 #1B1714; font-size: 21px; font-weight: 900; cursor: pointer">Join the game</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { seat: 'black' };
+  }
+  renderVals() {
+    var self = this;
+    var defs = [
+      { k: 'red', parish: 'St. Elizabeth', color: '#B5232A', mark: 'M10 2l8 8-8 8-8-8z', edge: '#1B1714', markFill: '#F4E9D4', takenBy: '' },
+      { k: 'gold', parish: 'St. Andrew', color: '#E8B21C', mark: 'M10 3l8 14H2z', edge: '#1B1714', markFill: '#1B1714', takenBy: 'Marlon' },
+      { k: 'green', parish: 'St. Mary', color: '#2F7D32', mark: 'M10 3a7 7 0 1 0 0.01 0z', edge: '#1B1714', markFill: '#F4E9D4', takenBy: 'Keisha' },
+      { k: 'black', parish: 'St. Ann', color: '#1B1714', mark: 'M4 4h12v12H4z', edge: '#E8D9B8', markFill: '#E8B21C', takenBy: '' }
+    ];
+    var seats = defs.map(function (d) {
+      var taken = !!d.takenBy;
+      var on = self.state.seat === d.k;
+      return Object.assign({}, d, {
+        taken: taken,
+        pressed: on ? 'true' : 'false',
+        status: taken ? d.takenBy + ' is here' : on ? 'Your yard' : 'Open',
+        pick: function () { if (!taken) self.setState({ seat: d.k }); },
+        style: 'display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 8px; border-radius: 14px; color: #F4E9D4; cursor: ' + (taken ? 'not-allowed' : 'pointer') + '; ' +
+          (on ? 'background: #17110D; border: 2.5px solid #E8B21C; box-shadow: 0 0 0 2px rgba(232,178,28,0.25);'
+            : taken ? 'background: rgba(0,0,0,0.18); border: 2.5px dashed rgba(255,255,255,0.15); opacity: 0.6;'
+            : 'background: rgba(0,0,0,0.3); border: 2.5px solid rgba(255,255,255,0.08);')
+      });
+    });
+    return { seats: seats };
+  }
+}
+</script>
+</body>
+</html>

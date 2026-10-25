@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pass the phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&amp;family=Nunito:wght@600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F2C14E}a:hover{color:#FFE29A}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: #3A2416; background-image: repeating-linear-gradient(92deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 5px, rgba(255,255,255,0.02) 5px, rgba(255,255,255,0.02) 11px), repeating-linear-gradient(88deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0) 37px); color: #F4E9D4; font-family: 'Nunito', system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 56px 24px 40px; overflow: hidden">
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 10px">
+    <div style="display: flex; gap: 4px" aria-hidden="true">
+      <div style="width: 40px; height: 6px; border-radius: 3px; background: #B5232A"></div>
+      <div style="width: 40px; height: 6px; border-radius: 3px; background: #E8B21C"></div>
+      <div style="width: 40px; height: 6px; border-radius: 3px; background: #2F7D32"></div>
+    </div>
+    <div style="font-size: 14px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; opacity: 0.9">Keisha's turn is done</div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 26px; text-align: center">
+    <div style="width: 220px; height: 220px; border-radius: 12px; background: #1B1714; border: 9px solid #17110D; box-shadow: 0 0 0 2px #8A6A44, 0 14px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px">
+      <svg width="104" height="104" viewBox="0 0 20 20" aria-hidden="true">
+        <circle cx="10" cy="10" r="8.7" fill="#1B1714" stroke="#E8D9B8" stroke-width="2.4" stroke-dasharray="1.5 1.1"/>
+        <circle cx="10" cy="10" r="6.2" fill="none" stroke="#E8D9B8" stroke-opacity="0.55" stroke-width="0.8"/>
+        <g transform="translate(5 5) scale(0.5)"><path d="M4 4h12v12H4z" fill="#E8B21C"/></g>
+      </svg>
+      <div style="font-family: 'Caveat Brush', cursive; font-size: 30px; line-height: 1; color: #F4E9D4">St. Ann</div>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 4px">
+      <div style="font-size: 19px; font-weight: 800">Pass the phone to</div>
+      <div style="font-family: 'Caveat Brush', cursive; font-size: 72px; line-height: 0.95; color: #F2C14E">Junior</div>
+      <div style="font-size: 17px; font-weight: 700; opacity: 0.92">You're Black, the square men</div>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%">
+    <button style="width: 100%; height: 64px; border-radius: 16px; background: #E8B21C; color: #1B1714; border: 3px solid #1B1714; box-shadow: 0 6px 0 #1B1714; font-size: 22px; font-weight: 900; cursor: pointer">{{cta}}</button>
+    <div style="font-size: 14px; font-weight: 700; opacity: 0.85">Board stays hidden until Junior taps</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"patois":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var patois = this.props.patois ?? true;
+    return { cta: patois ? "Mi ready, mek mi roll" : "I'm ready" };
+  }
+}
+</script>
+</body>
+</html>

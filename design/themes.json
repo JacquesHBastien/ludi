@@ -1,0 +1,207 @@
+{
+ "_about": "Board themes. Player slots are always red, gold, green, black (the internal ids); each theme repaints them. Track squares use cycle[index % 6]. Home lane bars use cycle colors too; the bar touching heaven uses 'bar'. 'saltire' is the X across heaven. 'heavenTriangles' optionally repaints a heaven triangle so it never matches the saltire; otherwise triangles use 'players'.",
+ "playerSlots": {
+  "red": {
+   "shape": "diamond",
+   "markPath": "M10 2l8 8-8 8-8-8z"
+  },
+  "gold": {
+   "shape": "triangle",
+   "markPath": "M10 3l8 14H2z"
+  },
+  "green": {
+   "shape": "circle",
+   "markPath": "M10 3a7 7 0 1 0 0.01 0z"
+  },
+  "black": {
+   "shape": "square",
+   "markPath": "M4 4h12v12H4z"
+  }
+ },
+ "themes": {
+  "roots": {
+   "name": "Roots",
+   "exclusive": false,
+   "default": true,
+   "table": "#3A2416",
+   "frame": "#17110D",
+   "line": "#120D0A",
+   "ink": "#F4E9D4",
+   "trim": "#8A6A44",
+   "callout": "#F2C14E",
+   "cream": "#EFE3C8",
+   "saltire": "#E8B21C",
+   "bar": "#B98A5A",
+   "cycle": [
+    "#B5232A",
+    "#E8B21C",
+    "#2F7D32",
+    "#1B1714",
+    "#B98A5A",
+    "#EFE3C8"
+   ],
+   "players": {
+    "red": "#B5232A",
+    "gold": "#E8B21C",
+    "green": "#2F7D32",
+    "black": "#1B1714"
+   },
+   "heavenTriangles": {
+    "gold": "#C9960F"
+   },
+   "colorNames": [
+    "Red",
+    "Gold",
+    "Green",
+    "Black"
+   ],
+   "yards": [
+    "St. Elizabeth",
+    "St. Andrew",
+    "St. Mary",
+    "St. Ann"
+   ],
+   "center": [
+    "One",
+    "Love"
+   ]
+  },
+  "yardClassic": {
+   "name": "Yard Classic",
+   "exclusive": false,
+   "table": "#4A3322",
+   "frame": "#1D1A17",
+   "line": "#15130F",
+   "ink": "#F6EEDC",
+   "trim": "#94744C",
+   "callout": "#F2C21B",
+   "cream": "#F1EAD2",
+   "saltire": "#F2C21B",
+   "bar": "#F1EAD2",
+   "cycle": [
+    "#D8332A",
+    "#F2C21B",
+    "#5FA829",
+    "#6FB7E3",
+    "#F1EAD2",
+    "#1D1A17"
+   ],
+   "players": {
+    "red": "#D8332A",
+    "gold": "#F2C21B",
+    "green": "#5FA829",
+    "black": "#1D1A17"
+   },
+   "heavenTriangles": {
+    "gold": "#D4A20E"
+   },
+   "colorNames": [
+    "Red",
+    "Yellow",
+    "Green",
+    "Black"
+   ],
+   "yards": [
+    "St. Elizabeth",
+    "St. Andrew",
+    "St. Mary",
+    "St. Ann"
+   ],
+   "center": [
+    "One",
+    "Love"
+   ]
+  },
+  "stCroix": {
+   "name": "St. Croix Edition",
+   "exclusive": true,
+   "table": "#5B4330",
+   "frame": "#0F2A3F",
+   "line": "#0B1E2D",
+   "ink": "#F7F0E2",
+   "trim": "#3E8FA0",
+   "callout": "#F2C12E",
+   "cream": "#F7F2E7",
+   "saltire": "#F7F2E7",
+   "bar": "#E9D3A7",
+   "cycle": [
+    "#0F8C8C",
+    "#E8604C",
+    "#E9D3A7",
+    "#F2C12E",
+    "#1E3A6B",
+    "#F7F2E7"
+   ],
+   "players": {
+    "red": "#D9483B",
+    "gold": "#F2C12E",
+    "green": "#0F8C8C",
+    "black": "#1E3A6B"
+   },
+   "colorNames": [
+    "Coral",
+    "Gold",
+    "Teal",
+    "Navy"
+   ],
+   "yards": [
+    "Christiansted",
+    "Frederiksted",
+    "Cane Bay",
+    "Point Udall"
+   ],
+   "center": [
+    "Crucian",
+    "Pride"
+   ]
+  },
+  "haiti": {
+   "name": "Haitian Edition",
+   "exclusive": true,
+   "table": "#3A2416",
+   "frame": "#0D0D0D",
+   "line": "#0A0A0A",
+   "ink": "#F5F1E8",
+   "trim": "#4A63C9",
+   "callout": "#F4B400",
+   "cream": "#F5F1E8",
+   "saltire": "#F5F1E8",
+   "bar": "#F5F1E8",
+   "cycle": [
+    "#00209F",
+    "#D21034",
+    "#F5F1E8",
+    "#F4B400",
+    "#00843D",
+    "#E94E8B"
+   ],
+   "players": {
+    "red": "#D21034",
+    "gold": "#F4B400",
+    "green": "#00843D",
+    "black": "#00209F"
+   },
+   "colorNames": [
+    "Red",
+    "Gold",
+    "Green",
+    "Blue"
+   ],
+   "yards": [
+    "Port-au-Prince",
+    "Saint-Marc",
+    "Jacmel",
+    "Gonaïves"
+   ],
+   "center": [
+    "Ayiti",
+    "1804"
+   ]
+  }
+ },
+ "fonts": {
+  "display": "Caveat Brush (Google Fonts)",
+  "body": "Nunito 600-900 (Google Fonts)"
+ },
+ "pieces": "Men are drawn as bottle caps: filled circle in player color, crimped edge (dashed stroke), inner ring, player shape mark in the middle."
+}

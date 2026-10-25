@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Big moment</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&amp;family=Nunito:wght@600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F2C14E}a:hover{color:#FFE29A}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background-color: #3A2416; background-image: repeating-linear-gradient(92deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 5px, rgba(255,255,255,0.02) 5px, rgba(255,255,255,0.02) 11px), repeating-linear-gradient(88deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0) 37px); color: #F4E9D4; font-family: 'Nunito', system-ui, sans-serif; overflow: hidden">
+  <div style="position: absolute; left: 19px; top: 140px; width: 352px; height: 352px; background: #17110D; border-radius: 8px; opacity: 0.5" aria-hidden="true"></div>
+  <div style="position: absolute; inset: 0; background: rgba(12,8,5,0.62)" aria-hidden="true"></div>
+
+  <div style="position: absolute; left: 24px; right: 24px; top: 190px; display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; padding: 32px 22px 26px; border-radius: 20px; background: #17110D; border: 2px solid #8A6A44; box-shadow: 0 0 0 6px {{m.accent}}, 0 24px 50px rgba(0,0,0,0.6)">
+    <div style="position: relative; height: 104px; width: 200px" aria-hidden="true">
+      <sc-for list="{{m.caps}}" as="c" hint-placeholder-count="2">
+        <div style="{{c.style}}">
+          <svg width="{{c.size}}" height="{{c.size}}" viewBox="0 0 20 20" style="display: block">
+            <circle cx="10" cy="10" r="8.7" fill="{{c.color}}" stroke="{{c.edge}}" stroke-width="2.4" stroke-dasharray="1.5 1.1"/>
+            <circle cx="10" cy="10" r="6.2" fill="none" stroke="{{c.edge}}" stroke-opacity="0.55" stroke-width="0.8"/>
+            <g transform="translate(5 5) scale(0.5)"><path d="{{c.mark}}" fill="{{c.markFill}}"/></g>
+          </svg>
+        </div>
+      </sc-for>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <div style="font-family: 'Caveat Brush', cursive; font-size: 64px; line-height: 0.95; color: {{m.accent}}">{{m.shout}}</div>
+      <div style="font-size: 18px; font-weight: 800; line-height: 1.35">{{m.line}}</div>
+      <div style="font-size: 15px; font-weight: 600; opacity: 0.85; line-height: 1.35">{{m.sub}}</div>
+    </div>
+    <button style="height: 52px; padding: 0 28px; border-radius: 14px; background: #E8B21C; color: #1B1714; border: 3px solid #1B1714; box-shadow: 0 5px 0 #000; font-size: 18px; font-weight: 900; cursor: pointer">{{m.cta}}</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"moment":{"editor":"enum","options":["Kill","Born","Block","Heaven"],"default":"Kill"},"patois":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var P = {
+      red: { color: '#B5232A', mark: 'M10 2l8 8-8 8-8-8z', edge: '#1B1714', markFill: '#F4E9D4' },
+      gold: { color: '#E8B21C', mark: 'M10 3l8 14H2z', edge: '#1B1714', markFill: '#1B1714' },
+      green: { color: '#2F7D32', mark: 'M10 3a7 7 0 1 0 0.01 0z', edge: '#1B1714', markFill: '#F4E9D4' },
+      black: { color: '#1B1714', mark: 'M4 4h12v12H4z', edge: '#E8D9B8', markFill: '#E8B21C' }
+    };
+    function cap(k, x, y, size, extra) {
+      return Object.assign({}, P[k], { size: size, style: 'position: absolute; left: ' + x + 'px; top: ' + y + 'px; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.6));' + (extra || '') });
+    }
+    var pt = this.props.patois ?? true;
+    var moments = {
+      Kill: {
+        accent: '#B5232A',
+        caps: [cap('red', 18, 30, 64, ' transform: rotate(-24deg); opacity: 0.85;'), cap('green', 92, 6, 92)],
+        shout: pt ? 'Dead!' : 'Killed!',
+        line: "Keisha killed Auntie Bev's man.",
+        sub: pt ? 'Back a yard to St. Elizabeth yuh go.' : 'It goes back to the St. Elizabeth yard.',
+        cta: 'Keep going'
+      },
+      Born: {
+        accent: '#2F7D32',
+        caps: [cap('green', 54, 6, 92)],
+        shout: pt ? 'Yuh born!' : 'Born!',
+        line: 'Keisha rolled a 6. A new man is on the board.',
+        sub: 'Six means you roll again.',
+        cta: 'Roll again'
+      },
+      Block: {
+        accent: '#E8B21C',
+        caps: [cap('gold', 44, 18, 84), cap('gold', 72, 2, 84)],
+        shout: pt ? 'Block!' : 'Blocked!',
+        line: 'Marlon stacked two men. Nobody can pass.',
+        sub: 'Only another block landing on it can kill it.',
+        cta: 'Got it'
+      },
+      Heaven: {
+        accent: '#E8B21C',
+        caps: [cap('black', 54, 6, 92)],
+        shout: pt ? 'Reach heaven!' : 'Home!',
+        line: 'Junior got a man home.',
+        sub: '1 of 4 in heaven. 3 more to go.',
+        cta: 'Keep going'
+      }
+    };
+    return { m: moments[this.props.moment] || moments.Kill };
+  }
+}
+</script>
+</body>
+</html>

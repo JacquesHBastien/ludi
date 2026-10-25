@@ -1,0 +1,81 @@
+export type Color = 'red' | 'gold' | 'green' | 'black';
+
+export type DiceMode = 'two' | 'one';
+
+export interface Rules {
+  diceMode: DiceMode;
+  heavenless: boolean;
+}
+
+export interface Player {
+  id: string;
+  name: string;
+  /** Each player has one color. Two players sit diagonally (red/green or gold/black). */
+  color: Color;
+}
+
+/**
+ * A man's position is his progress along his own path:
+ *   -1        yard
+ *   0..47     main track (0 = his start square, 47 = his long crossing bar)
+ *   48..52    his home lane (safe)
+ *   53        heaven
+ */
+export type Progress = number;
+
+export type Move =
+  /** One man moves by one die. From the yard (from = -1) this is a born, and needs a 6. */
+  | { kind: 'single'; from: Progress; die: number }
+  /** Two men on the same square move together by a double, using both dice. */
+  | { kind: 'pair'; from: Progress; die: number };
+
+export type Action = { type: 'roll'; dice: number[] } | { type: 'move'; move: Move };
+
+export type GameEvent =
+  | { type: 'rolled'; color: Color; dice: number[] }
+  | { type: 'noMoves'; color: Color }
+  | { type: 'born'; color: Color; count: number }
+  | { type: 'kill'; color: Color; victim: Color; count: number; trackIndex: number }
+  | { type: 'block'; color: Color; trackIndex: number; count: number }
+  | { type: 'heaven'; color: Color; count: number }
+  | { type: 'finished'; playerId: string; place: number }
+  | { type: 'gameOver'; result: GameResult };
+
+export type GameResult = { kind: 'placed'; placements: string[] } | { kind: 'draw' };
+
+export interface Turn {
+  /** Index into `seats`. */
+  seat: number;
+  color: Color;
+  phase: 'roll' | 'move';
+  /** Dice still to be used this roll. */
+  dice: number[];
+  /** The dice as rolled. */
+  rolled: number[];
+  /** A 6 was rolled, so this color rolls again once the dice are used up. */
+  extraRoll: boolean;
+}
+
+export interface GameState {
+  version: 1;
+  rules: Rules;
+  players: Player[];
+  /** Colors in play, in turn order. */
+  seats: Color[];
+  /** Progress of each color's 4 men. Colors not in play have an empty list. */
+  men: Record<Color, Progress[]>;
+  turn: Turn;
+  /** Player ids in the order they got all their men to heaven. */
+  placements: string[];
+  status: 'playing' | 'over';
+  result: GameResult | null;
+  /** What happened during the last action, for the UI's big moments and sounds. */
+  events: GameEvent[];
+}
+
+export interface GameSetup {
+  players: Player[];
+  rules?: Partial<Rules>;
+  /** Which color rolls first. Defaults to the first seat in board order. */
+  firstColor?: Color;
+}

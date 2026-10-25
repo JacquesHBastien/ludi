@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rules sheet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&amp;family=Nunito:wght@600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F2C14E}a:hover{color:#FFE29A}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; box-sizing: border-box; background-color: #3A2416; background-image: repeating-linear-gradient(92deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 5px, rgba(255,255,255,0.02) 5px, rgba(255,255,255,0.02) 11px), repeating-linear-gradient(88deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0) 37px); color: #F4E9D4; font-family: 'Nunito', system-ui, sans-serif; overflow: hidden">
+  <div style="position: absolute; inset: 0; background: rgba(12,8,5,0.55)" aria-hidden="true"></div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; top: 64px; background: #EFE3C8; color: #1B1714; border-radius: 22px 22px 0 0; box-shadow: 0 -10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden">
+    <div style="display: flex; justify-content: center; padding-top: 10px" aria-hidden="true">
+      <div style="width: 44px; height: 5px; border-radius: 3px; background: #8A6A44"></div>
+    </div>
+    <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 16px 10px 20px">
+      <div style="font-family: 'Caveat Brush', cursive; font-size: 34px; line-height: 1">This game's rules</div>
+      <a href="Main.dc.html" aria-label="Close rules" style="width: 44px; height: 44px; border-radius: 10px; color: #1B1714; display: flex; align-items: center; justify-content: center">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </a>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; gap: 6px; padding: 0 20px 12px">
+      <div style="padding: 6px 12px; border-radius: 999px; background: #2F7D32; color: #FFFFFF; font-size: 13px; font-weight: 900">Two dice</div>
+      <div style="padding: 6px 12px; border-radius: 999px; background: #1B1714; color: #EFE3C8; font-size: 13px; font-weight: 900">Roots board</div>
+      <div style="padding: 6px 12px; border-radius: 999px; border: 1.5px dashed #6B5235; color: #4A3A28; font-size: 13px; font-weight: 800">Heaven-less off</div>
+    </div>
+    <div style="display: flex; flex-direction: column; padding: 0 20px 24px; gap: 0">
+      <sc-for list="{{sections}}" as="s" hint-placeholder-count="6">
+        <div style="display: flex; gap: 14px; padding: 13px 0; border-top: 1.5px solid rgba(27,23,20,0.14)">
+          <div style="{{s.dot}}" aria-hidden="true"></div>
+          <div style="display: flex; flex-direction: column; gap: 3px">
+            <div style="font-size: 16px; font-weight: 900">{{s.title}}</div>
+            <div style="font-size: 14px; font-weight: 600; line-height: 1.4; color: #3A2E22">{{s.body}}</div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var items = [
+      ['#2F7D32', 'Getting born', 'Roll a 6 to bring a man out of your yard. Double 6 can born two at once.'],
+      ['#E8B21C', 'Sixes', 'Any 6 gives you one more roll. Double 6 still gives just one.'],
+      ['#B5232A', 'Killing', 'Land on a man and he goes back to his yard. No safe squares on the track, not even a start square.'],
+      ['#1B1714', 'Blocks', 'Two or three of your men on one square. Nobody passes. Only a double moves it together, and only another block can kill it.'],
+      ['#B98A5A', 'Two dice', 'Use both dice. Split them across two men or put both on one.'],
+      ['#2F7D32', 'Reaching heaven', 'Go all the way round, then up your own lane. You need the exact count, or move another man.']
+    ];
+    return {
+      sections: items.map(function (it) {
+        return { title: it[1], body: it[2], dot: 'width: 14px; height: 14px; border-radius: 3px; margin-top: 4px; flex-shrink: 0; background: ' + it[0] + '; box-shadow: inset 0 0 0 1.5px rgba(0,0,0,0.35)' };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ludi game board</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Caveat+Brush&amp;family=Nunito:wght@600;700;800;900&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#F2C14E}a:hover{color:#FFE29A}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background-color: {{t.table}}; background-image: {{t.tableGrain}}; color: {{t.ink}}; font-family: 'Nunito', system-ui, sans-serif; display: flex; flex-direction: column; padding: 14px 16px 18px; gap: 12px; overflow: hidden">
+
+  <div style="display: flex; align-items: center; justify-content: space-between; height: 44px">
+    <button aria-label="Menu" style="width: 44px; height: 44px; border-radius: 10px; border: 2px solid {{t.trim}}; background: rgba(0,0,0,0.25); color: {{t.ink}}; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+    <div style="display: flex; align-items: center; gap: 8px">
+      <div style="display: flex; gap: 3px" aria-hidden="true">
+        <div style="width: 6px; height: 22px; border-radius: 2px; background: #B5232A"></div>
+        <div style="width: 6px; height: 22px; border-radius: 2px; background: #E8B21C"></div>
+        <div style="width: 6px; height: 22px; border-radius: 2px; background: #2F7D32"></div>
+      </div>
+      <div style="font-family: 'Caveat Brush', cursive; font-size: 38px; line-height: 1; color: {{t.ink}}">Ludi</div>
+    </div>
+    <button aria-label="Rules" style="width: 44px; height: 44px; border-radius: 10px; border: 2px solid {{t.trim}}; background: rgba(0,0,0,0.25); color: {{t.ink}}; display: flex; align-items: center; justify-content: center; cursor: pointer">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg>
+    </button>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+    <sc-for list="{{players}}" as="p" hint-placeholder-count="4">
+      <div style="{{p.chipStyle}}">
+        <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+          <circle cx="10" cy="10" r="8.6" fill="{{p.color}}" stroke="{{p.capEdge}}" stroke-width="2.2" stroke-dasharray="1.5 1.1"/>
+          <g transform="translate(5 5) scale(0.5)"><path d="{{p.mark}}" fill="{{p.markFill}}"/></g>
+        </svg>
+        <div style="font-size: 12px; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%">{{p.name}}</div>
+        <div style="font-size: 11px; font-weight: 700; opacity: 0.9">{{p.home}}/4 home</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="background-color: {{t.frame}}; background-image: {{t.frameGrain}}; padding: 9px; border-radius: 8px; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.06), 0 8px 0 rgba(0,0,0,0.35), 0 16px 28px rgba(0,0,0,0.4); align-self: center">
+    <div style="position: relative; width: 336px; height: 336px; background: {{t.line}}">
+      <sc-for list="{{yards}}" as="y" hint-placeholder-count="4">
+        <div style="{{y.style}}">
+          <div style="{{y.labelStyle}}">{{y.name}}</div>
+        </div>
+      </sc-for>
+      <sc-for list="{{cells}}" as="c" hint-placeholder-count="72">
+        <div style="{{c.style}}"></div>
+      </sc-for>
+      <svg width="82" height="82" viewBox="0 0 4 4" aria-hidden="true" style="position: absolute; left: 127px; top: 127px">
+        <polygon points="0,0 2,2 0,4" fill="{{t.p.red}}"/>
+        <polygon points="0,0 4,0 2,2" fill="{{t.p.gold}}"/>
+        <polygon points="4,0 4,4 2,2" fill="{{t.p.green}}"/>
+        <polygon points="0,4 4,4 2,2" fill="{{t.p.black}}"/>
+        <path d="M0,0 L4,4 M4,0 L0,4" stroke="{{t.saltire}}" stroke-width="0.32"/>
+        <circle cx="2" cy="2" r="0.78" fill="{{t.cream}}" stroke="{{t.line}}" stroke-width="0.06"/>
+        <text x="2" y="1.93" text-anchor="middle" font-family="Caveat Brush, cursive" font-size="0.36" fill="{{t.line}}">{{t.c1}}</text>
+        <text x="2" y="2.33" text-anchor="middle" font-family="Caveat Brush, cursive" font-size="0.36" fill="{{t.line}}">{{t.c2}}</text>
+      </svg>
+      <div style="position: absolute; inset: 0; pointer-events: none; background-image: {{t.boardGrain}}; mix-blend-mode: multiply; opacity: 0.55"></div>
+      <sc-for list="{{sockets}}" as="s" hint-placeholder-count="16">
+        <div style="{{s.style}}"></div>
+      </sc-for>
+      <sc-for list="{{pawns}}" as="pw" hint-placeholder-count="16">
+        <div role="img" aria-label="{{pw.label}}" style="{{pw.style}}">
+          <svg width="{{pw.size}}" height="{{pw.size}}" viewBox="0 0 20 20" aria-hidden="true" style="display: block">
+            <circle cx="10" cy="10" r="8.7" fill="{{pw.color}}" stroke="{{pw.edge}}" stroke-width="2.4" stroke-dasharray="1.5 1.1"/>
+            <circle cx="10" cy="10" r="6.2" fill="none" stroke="{{pw.edge}}" stroke-opacity="0.55" stroke-width="0.8"/>
+            <g transform="translate(5 5) scale(0.5)"><path d="{{pw.mark}}" fill="{{pw.markFill}}"/></g>
+          </svg>
+          <sc-if value="{{pw.isBlock}}" hint-placeholder-val="{{ false }}">
+            <div style="position: absolute; right: -8px; top: -9px; min-width: 15px; height: 15px; border-radius: 8px; background: #F2C14E; color: #1B1714; font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 1.5px solid #1B1714">2</div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 0">
+        <div style="font-size: 13px; font-weight: 800; opacity: 0.85">{{turnLine}}</div>
+        <div style="font-family: 'Caveat Brush', cursive; font-size: 32px; line-height: 1.05; color: {{t.callout}}">{{shout}}</div>
+      </div>
+      <div style="display: flex; gap: 10px; padding: 8px; border-radius: 14px; background-color: {{t.frame}}; background-image: {{t.frameGrain}}; box-shadow: inset 0 3px 6px rgba(0,0,0,0.5)">
+        <sc-for list="{{dice}}" as="d" hint-placeholder-count="2">
+          <div role="img" aria-label="{{d.label}}" style="width: 54px; height: 54px; border-radius: 11px; background: #F4ECDA; border: 2px solid #1B1714; box-shadow: 0 3px 0 #1B1714; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 7px; box-sizing: border-box; gap: 2px">
+            <sc-for list="{{d.pips}}" as="pip" hint-placeholder-count="9">
+              <div style="display: flex; align-items: center; justify-content: center">
+                <sc-if value="{{pip.on}}" hint-placeholder-val="{{ false }}">
+                  <div style="width: 9px; height: 9px; border-radius: 5px; background: #1B1714"></div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="background: rgba(0,0,0,0.28); border: 1.5px solid {{t.trim}}; border-radius: 12px; padding: 11px 14px; display: flex; flex-direction: column; gap: 4px">
+      <div style="font-size: 15px; font-weight: 900">Tap your block to move both men 4.</div>
+      <div style="font-size: 14px; font-weight: 600; line-height: 1.35; opacity: 0.92">Or tap one man to split and move it 8. Landing 4 ahead kills Auntie Bev's man.</div>
+    </div>
+    <div style="font-size: 13px; font-weight: 800; opacity: 0.8; text-align: center">{{nextLine}}</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["Roots","Yard Classic","St. Croix","Haiti"],"default":"Roots"},"patois":{"editor":"boolean","default":true},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var grainDark = 'repeating-linear-gradient(92deg, rgba(255,255,255,0.035) 0px, rgba(255,255,255,0.035) 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 5px, rgba(255,255,255,0.02) 5px, rgba(255,255,255,0.02) 11px), repeating-linear-gradient(88deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0) 3px, rgba(0,0,0,0) 37px)';
+    var boardGrain = 'repeating-linear-gradient(91deg, rgba(90,60,30,0.10) 0px, rgba(90,60,30,0.10) 1px, rgba(0,0,0,0) 1px, rgba(0,0,0,0) 6px), repeating-linear-gradient(89deg, rgba(60,40,20,0.12) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,0) 23px)';
+    var themes = {
+      'Roots': {
+        table: '#3A2416', tableGrain: grainDark, frame: '#17110D', frameGrain: grainDark, line: '#120D0A',
+        ink: '#F4E9D4', trim: '#8A6A44', callout: '#F2C14E', saltire: '#E8B21C', cream: '#EFE3C8', boardGrain: boardGrain,
+        cycle: ['#B5232A', '#E8B21C', '#2F7D32', '#1B1714', '#B98A5A', '#EFE3C8'],
+        bar: '#B98A5A',
+        p: { red: '#B5232A', gold: '#E8B21C', green: '#2F7D32', black: '#1B1714' }
+      },
+      'Yard Classic': {
+        table: '#4A3322', tableGrain: grainDark, frame: '#1D1A17', frameGrain: grainDark, line: '#15130F',
+        ink: '#F6EEDC', trim: '#94744C', callout: '#F2C21B', saltire: '#F2C21B', cream: '#F1EAD2', boardGrain: boardGrain,
+        cycle: ['#D8332A', '#F2C21B', '#5FA829', '#6FB7E3', '#F1EAD2', '#1D1A17'],
+        bar: '#F1EAD2',
+        p: { red: '#D8332A', gold: '#F2C21B', green: '#5FA829', black: '#1D1A17' }
+      },
+      'St. Croix': {
+        table: '#5B4330', tableGrain: grainDark, frame: '#0F2A3F', frameGrain: grainDark, line: '#0B1E2D',
+        ink: '#F7F0E2', trim: '#3E8FA0', callout: '#F2C12E', saltire: '#F7F2E7', cream: '#F7F2E7', boardGrain: boardGrain,
+        cycle: ['#0F8C8C', '#E8604C', '#E9D3A7', '#F2C12E', '#1E3A6B', '#F7F2E7'],
+        bar: '#E9D3A7',
+        p: { red: '#D9483B', gold: '#F2C12E', green: '#0F8C8C', black: '#1E3A6B' },
+        edition: 'St. Croix Edition', center: ['Crucian', 'Pride'],
+        yards: ['Christiansted', 'Frederiksted', 'Cane Bay', 'Point Udall'],
+        colorNames: ['Coral', 'Gold', 'Teal', 'Navy']
+      },
+      'Haiti': {
+        table: '#3A2416', tableGrain: grainDark, frame: '#0D0D0D', frameGrain: grainDark, line: '#0A0A0A',
+        ink: '#F5F1E8', trim: '#4A63C9', callout: '#F4B400', saltire: '#F5F1E8', cream: '#F5F1E8', boardGrain: boardGrain,
+        cycle: ['#00209F', '#D21034', '#F5F1E8', '#F4B400', '#00843D', '#E94E8B'],
+        bar: '#F5F1E8',
+        p: { red: '#D21034', gold: '#F4B400', green: '#00843D', black: '#00209F' },
+        edition: 'Haitian Edition', center: ['Ayiti', '1804'],
+        yards: ['Port-au-Prince', 'Saint-Marc', 'Jacmel', 'Gonaïves'],
+        colorNames: ['Red', 'Gold', 'Green', 'Blue']
+      }
+    };
+    var t = themes[this.props.theme] || themes['Roots'];
+    t.yards = t.yards || ['St. Elizabeth', 'St. Andrew', 'St. Mary', 'St. Ann'];
+    t.colorNames = t.colorNames || ['Red', 'Gold', 'Green', 'Black'];
+    t.center = t.center || ['One', 'Love'];
+    t.hasEdition = !!t.edition;
+    t.c1 = t.center[0]; t.c2 = t.center[1];
+    var u = 21;
+    var marks = {
+      red: 'M10 2l8 8-8 8-8-8z',
+      gold: 'M10 3l8 14H2z',
+      green: 'M10 3a7 7 0 1 0 0.01 0z',
+      black: 'M4 4h12v12H4z'
+    };
+    var edge = { red: '#1B1714', gold: '#1B1714', green: '#1B1714', black: '#E8D9B8' };
+    var markFill = { red: '#F4E9D4', gold: '#1B1714', green: '#F4E9D4', black: '#E8B21C' };
+
+    function rect(x, y, w, h, bg, extra) {
+      return { style: 'position: absolute; left: ' + (x * u + 1) + 'px; top: ' + (y * u + 1) + 'px; width: ' + (w * u - 2) + 'px; height: ' + (h * u - 2) + 'px; background: ' + bg + '; border-radius: 1px;' + (extra || '') };
+    }
+
+    var track = [];
+    var i;
+    for (i = 0; i <= 4; i++) track.push([i, 5, 1, 1]);
+    track.push([5, 5, 1, 1]);
+    for (i = 4; i >= 0; i--) track.push([5, i, 1, 1]);
+    track.push([6, 0, 4, 1]);
+    for (i = 0; i <= 4; i++) track.push([10, i, 1, 1]);
+    track.push([10, 5, 1, 1]);
+    for (i = 11; i <= 15; i++) track.push([i, 5, 1, 1]);
+    track.push([15, 6, 1, 4]);
+    for (i = 15; i >= 11; i--) track.push([i, 10, 1, 1]);
+    track.push([10, 10, 1, 1]);
+    for (i = 11; i <= 15; i++) track.push([10, i, 1, 1]);
+    track.push([6, 15, 4, 1]);
+    for (i = 15; i >= 11; i--) track.push([5, i, 1, 1]);
+    track.push([5, 10, 1, 1]);
+    for (i = 4; i >= 0; i--) track.push([i, 10, 1, 1]);
+    track.push([0, 6, 1, 4]);
+
+    var cells = track.map(function (r, idx) { return rect(r[0], r[1], r[2], r[3], t.cycle[idx % 6]); });
+    var k;
+    for (k = 1; k <= 4; k++) {
+      var col = t.cycle[(k + 1) % 6];
+      cells.push(rect(6, k, 4, 1, col));
+      cells.push(rect(15 - k, 6, 1, 4, col));
+      cells.push(rect(6, 15 - k, 4, 1, col));
+      cells.push(rect(k, 6, 1, 4, col));
+    }
+    cells.push(rect(6, 5, 4, 1, t.bar));
+    cells.push(rect(10, 6, 1, 4, t.bar));
+    cells.push(rect(6, 10, 4, 1, t.bar));
+    cells.push(rect(5, 6, 1, 4, t.bar));
+
+    var yardDefs = [
+      { k: 'red', x: 0, y: 0, name: t.yards[0] },
+      { k: 'gold', x: 11, y: 0, name: t.yards[1] },
+      { k: 'green', x: 11, y: 11, name: t.yards[2] },
+      { k: 'black', x: 0, y: 11, name: t.yards[3] }
+    ];
+    var yards = yardDefs.map(function (yd) {
+      var r = rect(yd.x, yd.y, 5, 5, t.p[yd.k]);
+      var top = yd.y === 0 ? 'top: 4px;' : 'bottom: 3px;';
+      return {
+        name: yd.name,
+        style: r.style + ' overflow: hidden;',
+        labelStyle: 'position: absolute; left: 0; right: 0; ' + top + ' text-align: center; font-family: \'Caveat Brush\', cursive; font-size: ' + (yd.name.length > 12 ? 14 : 17) + 'px; white-space: nowrap; line-height: 1; color: ' + (yd.k === 'gold' ? '#1B1714' : '#F4E9D4') + '; opacity: 0.9'
+      };
+    });
+
+    var spotOff = [[1.55, 2.15], [3.45, 2.15], [1.55, 3.85], [3.45, 3.85]];
+    var spotOffBottom = [[1.55, 1.15], [3.45, 1.15], [1.55, 2.85], [3.45, 2.85]];
+    function yardSpot(k, n) {
+      var yd = yardDefs.filter(function (d) { return d.k === k; })[0];
+      var off = (yd.y === 0 ? spotOff : spotOffBottom)[n];
+      return [(yd.x + off[0]) * u, (yd.y + off[1]) * u];
+    }
+    var sockets = [];
+    yardDefs.forEach(function (yd) {
+      for (var n = 0; n < 4; n++) {
+        var p = yardSpot(yd.k, n);
+        sockets.push({ style: 'position: absolute; left: ' + (p[0] - 14) + 'px; top: ' + (p[1] - 14) + 'px; width: 28px; height: 28px; border-radius: 14px; background: rgba(0,0,0,0.22); box-shadow: inset 0 2px 4px rgba(0,0,0,0.35)' });
+      }
+    });
+
+    function center(r) { return [(r[0] + r[2] / 2) * u, (r[1] + r[3] / 2) * u]; }
+    var names = { red: 'Auntie Bev', gold: 'Marlon', green: 'Keisha', black: 'Junior' };
+    var raw = [
+      { k: 'red', at: center(track[31]) },
+      { k: 'red', yard: 1 }, { k: 'red', yard: 2 }, { k: 'red', yard: 3 },
+      { k: 'gold', at: center(track[6]) },
+      { k: 'gold', at: center([6, 2, 4, 1]) },
+      { k: 'gold', yard: 2 }, { k: 'gold', yard: 3 },
+      { k: 'green', at: center(track[27]), block: true, legal: true },
+      { k: 'green', yard: 2 }, { k: 'green', yard: 3 },
+      { k: 'black', at: center(track[44]) },
+      { k: 'black', at: [8 * u, 9.25 * u], small: true },
+      { k: 'black', yard: 2 }, { k: 'black', yard: 3 }
+    ];
+    var pawns = raw.map(function (q) {
+      var pt, size = 19;
+      if (q.yard !== undefined) { pt = yardSpot(q.k, q.yard); size = 26; }
+      else { pt = q.at; if (q.small) size = 15; }
+      var glow = q.legal ? 'filter: drop-shadow(0 0 0 #F2C14E) drop-shadow(0 0 3px #F2C14E) drop-shadow(0 0 6px #F2C14E);' : 'filter: drop-shadow(0 2px 0 rgba(0,0,0,0.5));';
+      var where = q.yard !== undefined ? 'in yard' : q.small ? 'in heaven' : 'on the board';
+      return {
+        size: size, color: t.p[q.k], edge: edge[q.k], mark: marks[q.k], markFill: markFill[q.k],
+        isBlock: !!q.block,
+        label: names[q.k] + (q.block ? ' block of 2 men' : ' man') + ', ' + where + (q.legal ? ', can move' : ''),
+        style: 'position: absolute; left: ' + (pt[0] - size / 2) + 'px; top: ' + (pt[1] - size / 2) + 'px; width: ' + size + 'px; height: ' + size + 'px; ' + glow
+      };
+    });
+    var blockShadow = pawns.filter(function (p) { return p.isBlock; })[0];
+    if (blockShadow) {
+      var under = Object.assign({}, blockShadow, { isBlock: false, label: '' });
+      under.style = blockShadow.style.replace(/left: ([0-9.-]+)px; top: ([0-9.-]+)px/, function (m, l, tp) { return 'left: ' + (parseFloat(l) + 3) + 'px; top: ' + (parseFloat(tp) + 3) + 'px'; }) + ' opacity: 0.95;';
+      var at = pawns.indexOf(blockShadow);
+      pawns.splice(at, 0, under);
+    }
+
+    var order = ['red', 'gold', 'green', 'black'];
+    var home = { red: 0, gold: 0, green: 0, black: 1 };
+    var players = order.map(function (k) {
+      var active = k === 'green';
+      var ink = k === 'gold' ? '#1B1714' : '#F4E9D4';
+      return {
+        name: names[k], color: t.p[k], capEdge: edge[k], mark: marks[k], markFill: markFill[k], home: home[k],
+        chipStyle: 'display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 4px; border-radius: 10px; min-width: 0; ' +
+          (active
+            ? 'background: ' + t.p[k] + '; color: ' + ink + '; border: 2px solid #F2C14E; box-shadow: 0 0 0 2px rgba(0,0,0,0.4), 0 4px 10px rgba(0,0,0,0.35);'
+            : 'background: rgba(0,0,0,0.28); border: 2px solid rgba(255,255,255,0.08);')
+      };
+    });
+
+    var faces = { 4: [1, 0, 1, 0, 0, 0, 1, 0, 1] };
+    var dice = [4, 4].map(function (n) {
+      return { label: 'Die showing ' + n, pips: faces[n].map(function (v) { return { on: !!v }; }) };
+    });
+    var patois = this.props.patois ?? true;
+    return {
+      turnLine: "Keisha's turn · " + t.yards[2],
+      nextLine: 'Up next: Junior (' + t.colorNames[3] + ' · ' + t.yards[3] + ')',
+      t: t, cells: cells, yards: yards, sockets: sockets, pawns: pawns, players: players, dice: dice,
+      shout: patois ? 'Double four! Move di block!' : 'You rolled a double 4'
+    };
+  }
+}
+</script>
+</body>
+</html>

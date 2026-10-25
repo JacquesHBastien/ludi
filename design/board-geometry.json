@@ -1,0 +1,723 @@
+{
+ "_about": "Board geometry in grid units. Board is 16x16 units. Each rect is [x, y, w, h]. x right, y down. Track is clockwise. Long bars are 4 units long, 1 unit wide.",
+ "gridSize": 16,
+ "trackLength": 48,
+ "colorCycleLength": 6,
+ "track": [
+  {
+   "index": 0,
+   "rect": [
+    0,
+    5,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 0
+  },
+  {
+   "index": 1,
+   "rect": [
+    1,
+    5,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 1
+  },
+  {
+   "index": 2,
+   "rect": [
+    2,
+    5,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 2
+  },
+  {
+   "index": 3,
+   "rect": [
+    3,
+    5,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 3
+  },
+  {
+   "index": 4,
+   "rect": [
+    4,
+    5,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 4
+  },
+  {
+   "index": 5,
+   "rect": [
+    5,
+    5,
+    1,
+    1
+   ],
+   "kind": "corner",
+   "colorSlot": 5
+  },
+  {
+   "index": 6,
+   "rect": [
+    5,
+    4,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 0
+  },
+  {
+   "index": 7,
+   "rect": [
+    5,
+    3,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 1
+  },
+  {
+   "index": 8,
+   "rect": [
+    5,
+    2,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 2
+  },
+  {
+   "index": 9,
+   "rect": [
+    5,
+    1,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 3
+  },
+  {
+   "index": 10,
+   "rect": [
+    5,
+    0,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 4
+  },
+  {
+   "index": 11,
+   "rect": [
+    6,
+    0,
+    4,
+    1
+   ],
+   "kind": "crossing",
+   "colorSlot": 5
+  },
+  {
+   "index": 12,
+   "rect": [
+    10,
+    0,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 0
+  },
+  {
+   "index": 13,
+   "rect": [
+    10,
+    1,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 1
+  },
+  {
+   "index": 14,
+   "rect": [
+    10,
+    2,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 2
+  },
+  {
+   "index": 15,
+   "rect": [
+    10,
+    3,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 3
+  },
+  {
+   "index": 16,
+   "rect": [
+    10,
+    4,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 4
+  },
+  {
+   "index": 17,
+   "rect": [
+    10,
+    5,
+    1,
+    1
+   ],
+   "kind": "corner",
+   "colorSlot": 5
+  },
+  {
+   "index": 18,
+   "rect": [
+    11,
+    5,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 0
+  },
+  {
+   "index": 19,
+   "rect": [
+    12,
+    5,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 1
+  },
+  {
+   "index": 20,
+   "rect": [
+    13,
+    5,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 2
+  },
+  {
+   "index": 21,
+   "rect": [
+    14,
+    5,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 3
+  },
+  {
+   "index": 22,
+   "rect": [
+    15,
+    5,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 4
+  },
+  {
+   "index": 23,
+   "rect": [
+    15,
+    6,
+    1,
+    4
+   ],
+   "kind": "crossing",
+   "colorSlot": 5
+  },
+  {
+   "index": 24,
+   "rect": [
+    15,
+    10,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 0
+  },
+  {
+   "index": 25,
+   "rect": [
+    14,
+    10,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 1
+  },
+  {
+   "index": 26,
+   "rect": [
+    13,
+    10,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 2
+  },
+  {
+   "index": 27,
+   "rect": [
+    12,
+    10,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 3
+  },
+  {
+   "index": 28,
+   "rect": [
+    11,
+    10,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 4
+  },
+  {
+   "index": 29,
+   "rect": [
+    10,
+    10,
+    1,
+    1
+   ],
+   "kind": "corner",
+   "colorSlot": 5
+  },
+  {
+   "index": 30,
+   "rect": [
+    10,
+    11,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 0
+  },
+  {
+   "index": 31,
+   "rect": [
+    10,
+    12,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 1
+  },
+  {
+   "index": 32,
+   "rect": [
+    10,
+    13,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 2
+  },
+  {
+   "index": 33,
+   "rect": [
+    10,
+    14,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 3
+  },
+  {
+   "index": 34,
+   "rect": [
+    10,
+    15,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 4
+  },
+  {
+   "index": 35,
+   "rect": [
+    6,
+    15,
+    4,
+    1
+   ],
+   "kind": "crossing",
+   "colorSlot": 5
+  },
+  {
+   "index": 36,
+   "rect": [
+    5,
+    15,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 0
+  },
+  {
+   "index": 37,
+   "rect": [
+    5,
+    14,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 1
+  },
+  {
+   "index": 38,
+   "rect": [
+    5,
+    13,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 2
+  },
+  {
+   "index": 39,
+   "rect": [
+    5,
+    12,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 3
+  },
+  {
+   "index": 40,
+   "rect": [
+    5,
+    11,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 4
+  },
+  {
+   "index": 41,
+   "rect": [
+    5,
+    10,
+    1,
+    1
+   ],
+   "kind": "corner",
+   "colorSlot": 5
+  },
+  {
+   "index": 42,
+   "rect": [
+    4,
+    10,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 0
+  },
+  {
+   "index": 43,
+   "rect": [
+    3,
+    10,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 1
+  },
+  {
+   "index": 44,
+   "rect": [
+    2,
+    10,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 2
+  },
+  {
+   "index": 45,
+   "rect": [
+    1,
+    10,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 3
+  },
+  {
+   "index": 46,
+   "rect": [
+    0,
+    10,
+    1,
+    1
+   ],
+   "kind": "square",
+   "colorSlot": 4
+  },
+  {
+   "index": 47,
+   "rect": [
+    0,
+    6,
+    1,
+    4
+   ],
+   "kind": "crossing",
+   "colorSlot": 5
+  }
+ ],
+ "players": {
+  "red": {
+   "yard": [
+    0,
+    0,
+    5,
+    5
+   ],
+   "startIndex": 0,
+   "lastTrackIndex": 47,
+   "homeLane": [
+    [
+     1,
+     6,
+     1,
+     4
+    ],
+    [
+     2,
+     6,
+     1,
+     4
+    ],
+    [
+     3,
+     6,
+     1,
+     4
+    ],
+    [
+     4,
+     6,
+     1,
+     4
+    ],
+    [
+     5,
+     6,
+     1,
+     4
+    ]
+   ],
+   "heavenTriangle": "left"
+  },
+  "gold": {
+   "yard": [
+    11,
+    0,
+    5,
+    5
+   ],
+   "startIndex": 12,
+   "lastTrackIndex": 11,
+   "homeLane": [
+    [
+     6,
+     1,
+     4,
+     1
+    ],
+    [
+     6,
+     2,
+     4,
+     1
+    ],
+    [
+     6,
+     3,
+     4,
+     1
+    ],
+    [
+     6,
+     4,
+     4,
+     1
+    ],
+    [
+     6,
+     5,
+     4,
+     1
+    ]
+   ],
+   "heavenTriangle": "top"
+  },
+  "green": {
+   "yard": [
+    11,
+    11,
+    5,
+    5
+   ],
+   "startIndex": 24,
+   "lastTrackIndex": 23,
+   "homeLane": [
+    [
+     14,
+     6,
+     1,
+     4
+    ],
+    [
+     13,
+     6,
+     1,
+     4
+    ],
+    [
+     12,
+     6,
+     1,
+     4
+    ],
+    [
+     11,
+     6,
+     1,
+     4
+    ],
+    [
+     10,
+     6,
+     1,
+     4
+    ]
+   ],
+   "heavenTriangle": "right"
+  },
+  "black": {
+   "yard": [
+    0,
+    11,
+    5,
+    5
+   ],
+   "startIndex": 36,
+   "lastTrackIndex": 35,
+   "homeLane": [
+    [
+     6,
+     14,
+     4,
+     1
+    ],
+    [
+     6,
+     13,
+     4,
+     1
+    ],
+    [
+     6,
+     12,
+     4,
+     1
+    ],
+    [
+     6,
+     11,
+     4,
+     1
+    ],
+    [
+     6,
+     10,
+     4,
+     1
+    ]
+   ],
+   "heavenTriangle": "bottom"
+  }
+ },
+ "heaven": [
+  6,
+  6,
+  4,
+  4
+ ],
+ "turnOrder": [
+  "red",
+  "gold",
+  "green",
+  "black"
+ ],
+ "homeLaneRule": "Confirmed: the crossing bar (lastTrackIndex) is a normal track square for everyone and the last square where that player's man can be killed. The man then turns into homeLane."
+}
