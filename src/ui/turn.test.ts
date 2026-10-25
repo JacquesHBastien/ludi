@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { YARD } from '../engine';
 import { H, at, pair, play, roll, scenario, single } from '../engine/testkit';
-import { nextColor, optionLabel, optionsAt, pickMoment, ranking, usedFlags } from './turn';
+import { landing, nextColor, pickMoment, planTap, ranking, tapTargets, usableDice, usedFlags } from './turn';
 
 describe('turn helpers', () => {
   it('marks used dice, including doubles', () => {
@@ -11,19 +11,40 @@ describe('turn helpers', () => {
     expect(usedFlags([4, 4], [])).toEqual([true, true]);
   });
 
-  it('offers a choice when tapping a block on a double', () => {
-    const s = roll(scenario({ men: { red: [10, 10] } }), 4, 4);
-    const legal = [single(10, 4), pair(10, 4)];
-    expect(optionsAt(legal, 10, null)).toEqual([pair(10, 4), single(10, 4)]);
-    expect(optionLabel(pair(10, 4), 2)).toBe('Move both men 4');
-    expect(optionLabel(single(10, 4), 2)).toBe('Move one man 4');
-    expect(optionLabel(single(YARD, 6), 3)).toBe('Born a man');
-    expect(s.turn.phase).toBe('move');
+  it('one picked die moves one man by that die', () => {
+    const s = roll(scenario({ men: { red: [10, 20] } }), 3, 4);
+    expect(planTap(s, 10, [3])).toEqual([single(10, 3)]);
+    expect(planTap(s, 20, [4])).toEqual([single(20, 4)]);
+    expect(planTap(s, 10, [])).toBeNull();
+    expect(tapTargets(s, [4])).toEqual([
+      { from: 10, to: 14 },
+      { from: 20, to: 24 },
+    ]);
   });
 
-  it('narrows choices to the picked die', () => {
-    const legal = [single(10, 3), single(10, 4), single(20, 3)];
-    expect(optionsAt(legal, 10, 4)).toEqual([single(10, 4)]);
+  it('both dice picked: a block moves together on a double, a single man takes both', () => {
+    const s = roll(scenario({ men: { red: [10, 10, 20] } }), 4, 4);
+    expect(planTap(s, 10, [4, 4])).toEqual([pair(10, 4)]);
+    expect(planTap(s, 20, [4, 4])).toEqual([single(20, 4), single(24, 4)]);
+    // One die picked on the block splits one man off.
+    expect(planTap(s, 10, [4])).toEqual([single(10, 4)]);
+
+    const t = roll(scenario({ men: { red: [10] } }), 3, 5);
+    expect(planTap(t, 10, [3, 5])).toEqual([single(10, 3), single(13, 5)]);
+    expect(landing(planTap(t, 10, [3, 5])!)).toBe(18);
+  });
+
+  it('both sixes on the yard borns two; tries the other order when one is blocked', () => {
+    const s = roll(scenario({}), 6, 6);
+    expect(planTap(s, YARD, [6, 6])).toEqual([pair(YARD, 6)]);
+    // Gold block 3 ahead of red: 3 then 2 lands on it, 2 then 3 passes it; neither works.
+    const blocked = roll(scenario({ men: { red: [10], gold: [at('gold', 13), at('gold', 13)] } }), 3, 2);
+    expect(planTap(blocked, 10, [3, 2])).toBeNull();
+  });
+
+  it('only offers dice that can move something', () => {
+    const s = roll(scenario({ men: { red: [H - 3] } }), 3, 5);
+    expect(usableDice(s)).toEqual([0]); // the 5 overshoots heaven
   });
 
   it('picks the most important moment', () => {

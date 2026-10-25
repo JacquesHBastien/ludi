@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { COLORS, HEAVEN, LANE_START, LAST_TRACK, trackIndexOf } from '../engine';
-import { UNIT, heavenRect, heavenSpot, laneRects, squareCenter, trackRects, yardRect, yardSpot, type GridRect, type Point } from './layout';
+import { BOARD_PX, UNIT, heavenRect, zoomBox, heavenSpot, laneRects, squareCenter, trackRects, yardRect, yardSpot, type GridRect, type Point } from './layout';
 
 const inside = (pt: Point, [x, y, w, h]: GridRect, pad = 0) =>
   pt.x >= (x + pad) * UNIT && pt.x <= (x + w - pad) * UNIT && pt.y >= (y + pad) * UNIT && pt.y <= (y + h - pad) * UNIT;
@@ -19,5 +19,14 @@ describe('board layout', () => {
       for (let i = 0; i < 4; i++) expect(inside(heavenSpot(c, i, 4), heavenRect, 0.3)).toBe(true);
     }
     expect(() => squareCenter('red', HEAVEN)).toThrow();
+  });
+
+  it('zooms to the men in play but never past the board or closer than 8.5 squares', () => {
+    const box = zoomBox('red', [5, 9]);
+    expect(box.size).toBeCloseTo(8.5 * UNIT);
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.y + box.size).toBeLessThanOrEqual(BOARD_PX);
+    expect(zoomBox('red', [0, 24]).size).toBeGreaterThan(10 * UNIT); // spread out: zoom less
+    expect(zoomBox('red', [])).toEqual({ x: 0, y: 0, size: BOARD_PX });
   });
 });

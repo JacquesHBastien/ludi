@@ -65,6 +65,7 @@ export default function App() {
         onChange={setGame}
         onTogglePatois={() => setPrefs({ ...prefs, patois: !prefs.patois })}
         onToggleSound={() => setPrefs({ ...prefs, muted: !prefs.muted })}
+        onChangeTheme={(themeId) => setPrefs({ ...prefs, themeId })}
         onHome={() => {
           if (game.status === 'over') clearGame();
           setScreen('home');

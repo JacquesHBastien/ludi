@@ -76,17 +76,24 @@ export const sfx = {
   step() {
     tone(720, 0.05, { type: 'triangle', gain: 0.07 });
   },
+  /** A cork-pop, then a bright little "ta-da" climbing up: a new man is out. */
   born() {
-    tone(392, 0.22, { type: 'triangle', slideTo: 784, gain: 0.2 });
-    tone(988, 0.12, { type: 'sine', at: 0.18, gain: 0.12 });
+    noise(0.05, { freq: 1500, gain: 0.6 });
+    tone(880, 0.09, { type: 'sine', slideTo: 330, gain: 0.3 });
+    [523, 659, 784, 1047].forEach((f, i) => tone(f, i === 3 ? 0.35 : 0.13, { type: 'triangle', at: 0.08 + i * 0.08, gain: 0.26 }));
+    tone(2093, 0.25, { type: 'sine', at: 0.4, gain: 0.08 });
   },
   block() {
     tone(196, 0.09, { type: 'square', gain: 0.1 });
     tone(196, 0.12, { type: 'square', at: 0.13, gain: 0.12 });
   },
+  /** A hard smack, then a sad "wah-wah" sliding down: sent back to the yard. */
   kill() {
-    tone(330, 0.4, { type: 'sawtooth', slideTo: 70, gain: 0.14 });
-    noise(0.18, { freq: 400, gain: 0.5 });
+    noise(0.12, { freq: 220, gain: 0.9 });
+    noise(0.05, { freq: 3000, gain: 0.35 });
+    tone(150, 0.18, { type: 'square', slideTo: 60, gain: 0.22 });
+    tone(392, 0.28, { type: 'sawtooth', at: 0.16, slideTo: 370, gain: 0.16 });
+    tone(349, 0.55, { type: 'sawtooth', at: 0.46, slideTo: 196, gain: 0.18 });
   },
   heaven() {
     [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.22, { type: 'triangle', at: i * 0.09, gain: 0.16 }));

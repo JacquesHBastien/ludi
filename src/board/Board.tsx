@@ -4,7 +4,9 @@ import { CAP, GRAIN, HIGHLIGHT, SLOT_INDEX, heavenColor, type Theme } from '../t
 import { CapShape } from './Cap';
 import {
   BOARD_PX,
+  cellOf,
   cellRect,
+  zoomBox,
   heavenRect,
   heavenSpot,
   isTopYard,
@@ -35,6 +37,18 @@ export interface BoardProps {
   moving?: Moving;
   /** Width of the dark frame around the board, in px. Small previews use a thinner frame. */
   frame?: number;
+  /**
+   * Zoom in on one color's turn: `spots` decide the view, `here` squares get a gold outline
+   * (where his men stand) and `there` squares a dashed one (where the picked dice would land them).
+   */
+  focus?: Focus;
+}
+
+export interface Focus {
+  color: Color;
+  spots: Progress[];
+  here: Progress[];
+  there: Progress[];
 }
 
 export interface Moving {
@@ -60,12 +74,15 @@ interface Piece {
   label: string;
 }
 
-export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving, frame = 9 }: BoardProps) {
+export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving, frame = 9, focus }: BoardProps) {
   const id = useId();
   const glowId = `${id}glow`;
   const shadowId = `${id}shadow`;
   const shown = moving ? withoutMoving(men, moving) : men;
-  const pieces = layoutPieces(theme, seats, shown, movable, names);
+  const box = focus ? zoomBox(focus.color, focus.spots) : { x: 0, y: 0, size: BOARD_PX };
+  const zoom = BOARD_PX / box.size;
+  // Zoomed in, men shrink a little so the color of the square they stand on shows around them.
+  const pieces = layoutPieces(theme, seats, shown, movable, names, zoom > 1.15 ? 15 : SIZE.board);
   // Draw legal men last so their glow and tap areas sit on top.
   const ordered = [...pieces.filter((p) => !p.legal), ...pieces.filter((p) => p.legal)];
 
@@ -79,59 +96,98 @@ export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving
         boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.06), 0 8px 0 rgba(0,0,0,0.35), 0 16px 28px rgba(0,0,0,0.4)',
       }}
     >
-      <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1' }}>
-        <svg viewBox={`0 0 ${BOARD_PX} ${BOARD_PX}`} style={layer} aria-hidden="true">
-          <Paint theme={theme} />
-        </svg>
+      <div style={{ position: 'relative', width: '100%', aspectRatio: '1 / 1', overflow: 'hidden' }}>
         <div
-          style={{ ...layer, backgroundImage: GRAIN.board, mixBlendMode: 'multiply', opacity: 0.55, pointerEvents: 'none' }}
-        />
-        <svg viewBox={`0 0 ${BOARD_PX} ${BOARD_PX}`} style={{ ...layer, overflow: 'visible' }} role="group" aria-label="Ludi board">
-          <defs>
-            <filter id={glowId} x="-100%" y="-100%" width="300%" height="300%">
-              <feDropShadow dx={0} dy={0} stdDeviation={2} floodColor={HIGHLIGHT} result="near" />
-              <feDropShadow in="near" dx={0} dy={0} stdDeviation={4} floodColor={HIGHLIGHT} />
-            </filter>
-            <filter id={shadowId} x="-50%" y="-50%" width="200%" height="200%">
-              <feDropShadow dx={0} dy={2} stdDeviation={0} floodColor="#000" floodOpacity={0.5} />
-            </filter>
-          </defs>
-          {SLOTS.flatMap((c) =>
-            [0, 1, 2, 3].map((n) => {
-              const { x, y } = yardSpot(c, n);
-              return <circle key={`${c}s${n}`} cx={x} cy={y} r={14} fill="rgba(0,0,0,0.22)" />;
-            }),
-          )}
-          {ordered.map((p) => (
-            <PieceView key={p.key} piece={p} fill={theme.players[p.color]} filter={p.legal ? glowId : shadowId} />
-          ))}
-          {moving && <Hopper key={moving.id} moving={moving} men={men} fill={theme.players[moving.color]} filter={shadowId} />}
-          {onTapMan &&
-            ordered
-              .filter((p) => p.legal)
-              .map((p) => (
-                <circle
-                  key={`${p.key}hit`}
-                  cx={p.at.x}
-                  cy={p.at.y}
-                  r={HIT_RADIUS}
-                  fill="transparent"
-                  role="button"
-                  tabIndex={0}
-                  aria-label={p.label}
-                  style={{ cursor: 'pointer', outline: 'none' }}
-                  onClick={() => onTapMan(p.from)}
-                  onKeyDown={(e: KeyboardEvent) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      onTapMan(p.from);
-                    }
-                  }}
-                />
-              ))}
-        </svg>
+          style={{
+            ...layer,
+            transformOrigin: '0 0',
+            transform: `scale(${zoom}) translate(${(-box.x / BOARD_PX) * 100}%, ${(-box.y / BOARD_PX) * 100}%)`,
+            transition: 'transform 0.45s ease-in-out',
+          }}
+        >
+          <svg viewBox={`0 0 ${BOARD_PX} ${BOARD_PX}`} style={layer} aria-hidden="true">
+            <Paint theme={theme} />
+          </svg>
+          <div
+            style={{ ...layer, backgroundImage: GRAIN.board, mixBlendMode: 'multiply', opacity: 0.55, pointerEvents: 'none' }}
+          />
+          <svg viewBox={`0 0 ${BOARD_PX} ${BOARD_PX}`} style={{ ...layer, overflow: 'visible' }} role="group" aria-label="Ludi board">
+            <defs>
+              <filter id={glowId} x="-100%" y="-100%" width="300%" height="300%">
+                <feDropShadow dx={0} dy={0} stdDeviation={2} floodColor={HIGHLIGHT} result="near" />
+                <feDropShadow in="near" dx={0} dy={0} stdDeviation={4} floodColor={HIGHLIGHT} />
+              </filter>
+              <filter id={shadowId} x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow dx={0} dy={2} stdDeviation={0} floodColor="#000" floodOpacity={0.5} />
+              </filter>
+            </defs>
+            {SLOTS.flatMap((c) =>
+              [0, 1, 2, 3].map((n) => {
+                const { x, y } = yardSpot(c, n);
+                return <circle key={`${c}s${n}`} cx={x} cy={y} r={14} fill="rgba(0,0,0,0.22)" />;
+              }),
+            )}
+            {focus && <SquareMarks focus={focus} />}
+            {ordered.map((p) => (
+              <PieceView key={p.key} piece={p} fill={theme.players[p.color]} filter={p.legal ? glowId : shadowId} />
+            ))}
+            {moving && <Hopper key={moving.id} moving={moving} men={men} fill={theme.players[moving.color]} filter={shadowId} />}
+            {onTapMan &&
+              ordered
+                .filter((p) => p.legal)
+                .map((p) => (
+                  <circle
+                    key={`${p.key}hit`}
+                    cx={p.at.x}
+                    cy={p.at.y}
+                    r={Math.max(11, HIT_RADIUS / zoom)}
+                    fill="transparent"
+                    role="button"
+                    tabIndex={0}
+                    aria-label={p.label}
+                    style={{ cursor: 'pointer', outline: 'none' }}
+                    onClick={() => onTapMan(p.from)}
+                    onKeyDown={(e: KeyboardEvent) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onTapMan(p.from);
+                      }
+                    }}
+                  />
+                ))}
+          </svg>
+        </div>
       </div>
     </div>
+  );
+}
+
+/** Gold outline on the squares the moving color's men stand on; dashed outline where they could land. */
+function SquareMarks({ focus }: { focus: Focus }) {
+  const outline = (p: Progress, dashed: boolean) => {
+    const cell = cellOf(focus.color, p);
+    if (!cell) return null;
+    const { x, y, w, h } = cellRect(cell);
+    return (
+      <rect
+        key={`${dashed ? 't' : 'h'}${p}`}
+        x={x - 1}
+        y={y - 1}
+        width={w + 2}
+        height={h + 2}
+        rx={2}
+        fill={dashed ? 'rgba(255,255,255,0.22)' : 'none'}
+        stroke={HIGHLIGHT}
+        strokeWidth={dashed ? 1.6 : 2.4}
+        strokeDasharray={dashed ? '3 2' : undefined}
+      />
+    );
+  };
+  return (
+    <g aria-hidden="true">
+      {[...new Set(focus.there)].map((p) => outline(p, true))}
+      {[...new Set(focus.here)].map((p) => outline(p, false))}
+    </g>
   );
 }
 
@@ -296,6 +352,7 @@ function layoutPieces(
   men: Record<Color, Progress[]>,
   movable: BoardProps['movable'],
   names: Partial<Record<Color, string>>,
+  boardSize: number,
 ): Piece[] {
   const out: Piece[] = [];
   for (const color of seats) {
@@ -328,7 +385,7 @@ function layoutPieces(
       const what = count > 1 ? `block of ${count} men` : 'man';
       const where = p > LAST_TRACK ? 'in the home lane' : 'on the board';
       out.push({
-        key: `${color}p${p}`, color, from: p, at: squareCenter(color, p), size: SIZE.board, count, legal,
+        key: `${color}p${p}`, color, from: p, at: squareCenter(color, p), size: boardSize, count, legal,
         label: `${who} ${what} ${where}${legal ? ', can move' : ''}`,
       });
     }

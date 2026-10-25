@@ -78,3 +78,39 @@ export function squareCenter(c: Color, p: Progress): Point {
   if (p <= LAST_TRACK) return centerOf(trackRects[(geometry.players[c].startIndex + p) % TRACK_LENGTH]!);
   return centerOf(laneRects(c)[p - LANE_START]!);
 }
+
+/** The track square or lane bar a man stands on, or null in the yard or heaven. */
+export function cellOf(c: Color, p: Progress): GridRect | null {
+  if (p === YARD || p === HEAVEN) return null;
+  if (p <= LAST_TRACK) return trackRects[(geometry.players[c].startIndex + p) % TRACK_LENGTH]!;
+  return laneRects(c)[p - LANE_START]!;
+}
+
+/**
+ * The part of the board to zoom to so these men and squares fill the view, as a square in px.
+ * Never closer than `minUnits` grid units across, so there's always some context.
+ */
+export function zoomBox(c: Color, spots: Progress[], minUnits = 8.5): { x: number; y: number; size: number } {
+  const pts: Point[] = [];
+  for (const p of spots) {
+    if (p === YARD) {
+      const [x, y, w, h] = yardRect(c);
+      pts.push({ x: x * UNIT, y: y * UNIT }, { x: (x + w) * UNIT, y: (y + h) * UNIT });
+    } else if (p === HEAVEN) {
+      const [x, y, w, h] = heavenRect;
+      pts.push({ x: (x + w / 2) * UNIT, y: (y + h / 2) * UNIT });
+    } else {
+      const [x, y, w, h] = cellOf(c, p)!;
+      pts.push({ x: x * UNIT, y: y * UNIT }, { x: (x + w) * UNIT, y: (y + h) * UNIT });
+    }
+  }
+  if (pts.length === 0) return { x: 0, y: 0, size: BOARD_PX };
+  const pad = 1.2 * UNIT;
+  const minX = Math.min(...pts.map((p) => p.x)) - pad;
+  const maxX = Math.max(...pts.map((p) => p.x)) + pad;
+  const minY = Math.min(...pts.map((p) => p.y)) - pad;
+  const maxY = Math.max(...pts.map((p) => p.y)) + pad;
+  const size = Math.min(BOARD_PX, Math.max(maxX - minX, maxY - minY, minUnits * UNIT));
+  const clamp = (v: number) => Math.min(Math.max(v, 0), BOARD_PX - size);
+  return { x: clamp((minX + maxX) / 2 - size / 2), y: clamp((minY + maxY) / 2 - size / 2), size };
+}

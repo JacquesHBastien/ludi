@@ -1,5 +1,5 @@
 // Pure helpers the game screen uses to turn engine state into taps, labels and moments.
-import { HEAVEN, YARD, type Color, type GameEvent, type GameState, type Move, type Progress } from '../engine';
+import { HEAVEN, YARD, applyAction, legalMoves, sameMove, type Color, type GameEvent, type GameState, type Move, type Progress } from '../engine';
 
 /** Which of the rolled dice are already used, given the dice still left. On a double the left die goes first. */
 export function usedFlags(rolled: number[], remaining: number[]): boolean[] {
@@ -13,22 +13,57 @@ export function usedFlags(rolled: number[], remaining: number[]): boolean[] {
   return flags.reverse();
 }
 
-/** Legal moves that fit the die the player picked (a pair move fits either die of the double). */
-export function movesForDie(legal: Move[], die: number | null): Move[] {
-  return die === null ? legal : legal.filter((m) => m.die === die);
+/** Where a move (or a chain of moves on one man) ends up. */
+export function landing(moves: Move[]): Progress {
+  let p = moves[0]!.from;
+  for (const m of moves) p = p === YARD ? 0 : p + m.die;
+  return p;
 }
 
-/** The choices for tapping the men on one square. Moving a block together is listed first. */
-export function optionsAt(legal: Move[], from: Progress, die: number | null): Move[] {
-  const here = movesForDie(legal, die).filter((m) => m.from === from);
-  return [...here.filter((m) => m.kind === 'pair'), ...here.filter((m) => m.kind !== 'pair')];
+/** Indexes into `turn.rolled` of dice that are unused and can start at least one legal move. */
+export function usableDice(state: GameState): number[] {
+  const legal = legalMoves(state);
+  const used = usedFlags(state.turn.rolled, state.turn.dice);
+  return state.turn.rolled.flatMap((d, i) => (!used[i] && legal.some((m) => m.die === d) ? [i] : []));
 }
 
-/** Button text for a move when a tap has more than one meaning. */
-export function optionLabel(m: Move, menHere: number): string {
-  if (m.from === YARD) return m.kind === 'pair' ? 'Born two men' : 'Born a man';
-  if (m.kind === 'pair') return `Move both men ${m.die}`;
-  return menHere > 1 ? `Move one man ${m.die}` : `Move ${m.die}`;
+/**
+ * What tapping the men on `from` does with the picked dice.
+ * One die: move one man by it. Both dice: on a double, a block moves together (or a double 6 borns two);
+ * otherwise one man moves by both, one die after the other. Null when the tap can't do anything.
+ */
+export function planTap(state: GameState, from: Progress, picked: number[]): Move[] | null {
+  const legal = legalMoves(state);
+  const fits = (m: Move) => legal.some((l) => sameMove(l, m));
+  if (picked.length === 1) {
+    const m: Move = { kind: 'single', from, die: picked[0]! };
+    return fits(m) ? [m] : null;
+  }
+  if (picked.length !== 2) return null;
+  const [a, b] = picked as [number, number];
+  if (a === b && fits({ kind: 'pair', from, die: a })) return [{ kind: 'pair', from, die: a }];
+  for (const [first, second] of [
+    [a, b],
+    [b, a],
+  ] as const) {
+    const m1: Move = { kind: 'single', from, die: first };
+    if (!fits(m1)) continue;
+    const after = applyAction(state, { type: 'move', move: m1 });
+    if (after.turn.color !== state.turn.color || after.turn.phase !== 'move') continue;
+    const m2: Move = { kind: 'single', from: landing([m1]), die: second };
+    if (legalMoves(after).some((l) => sameMove(l, m2))) return [m1, m2];
+  }
+  return null;
+}
+
+/** The squares whose men can be tapped with the picked dice, and where each would land. */
+export function tapTargets(state: GameState, picked: number[]): { from: Progress; to: Progress }[] {
+  if (picked.length === 0) return [];
+  const froms = [...new Set(state.men[state.turn.color].filter((p) => p !== HEAVEN))];
+  return froms.flatMap((from) => {
+    const plan = planTap(state, from, picked);
+    return plan ? [{ from, to: landing(plan) }] : [];
+  });
 }
 
 export type Moment =

@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Board, type Moving } from '../../board/Board';
+import { Board, type Focus, type Moving } from '../../board/Board';
 import { CapIcon } from '../../board/Cap';
-import { HEAVEN, YARD, applyAction, legalMoves, type Action, type Color, type GameState, type Progress } from '../../engine';
-import { CAP, HIGHLIGHT, type Theme } from '../../theme/themes';
+import { HEAVEN, YARD, applyAction, legalMoves, type Color, type GameEvent, type GameState, type Move, type Progress } from '../../engine';
+import { CAP, HIGHLIGHT, THEME_IDS, getTheme, type Theme, type ThemeId } from '../../theme/themes';
 import { copy } from '../copy';
 import { DiceTray, type DieView } from '../Dice';
 import { FlyingDice, type Flight } from '../FlyingDice';
 import { IconButton, PrimaryButton, Screen } from '../kit';
 import { Icons } from '../icons';
-import { DARK_INK, GOLD_BUTTON, display, seatInfo } from '../style';
+import { display, seatInfo } from '../style';
 import { rollDice } from '../random';
 import { sfx } from '../sound';
-import { movesForDie, nextColor, optionLabel, optionsAt, pickMoment, usedFlags, type Moment } from '../turn';
+import { landing, nextColor, pickMoment, planTap, tapTargets, usableDice, usedFlags, type Moment } from '../turn';
 import { GameOver } from './GameOver';
 import { Handoff } from './Handoff';
 import { MomentOverlay } from './MomentOverlay';
@@ -27,6 +27,7 @@ interface GameProps {
   onChange: (game: GameState) => void;
   onTogglePatois: () => void;
   onToggleSound: () => void;
+  onChangeTheme: (id: ThemeId) => void;
   onHome: () => void;
   onPlayAgain: () => void;
 }
@@ -39,12 +40,14 @@ const ROLL_MS = 1700;
 const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export function Game(props: GameProps) {
-  const { game, theme, patois, muted, testDice, onChange, onTogglePatois, onToggleSound, onHome, onPlayAgain } = props;
+  const { game, theme, patois, muted, testDice, onChange, onTogglePatois, onToggleSound, onChangeTheme, onHome, onPlayAgain } = props;
   const [view, setView] = useState<View>('handoff');
   const [doneBy, setDoneBy] = useState<Color | null>(null);
   const [lastRoll, setLastRoll] = useState<{ color: Color; dice: number[]; noMoves: boolean } | null>(null);
-  const [picked, setPicked] = useState<number | null>(null);
-  const [choosing, setChoosing] = useState<Progress | null>(null);
+  /** Dice the player has tapped, as indexes into turn.rolled. A man is tapped after. */
+  const [picked, setPicked] = useState<number[]>([]);
+  /** Colors that have already had their "Yuh born!" moment; after the first, born is just a sound. */
+  const [bornSeen, setBornSeen] = useState(() => new Set(game.seats.filter((c) => game.men[c].some((p) => p !== YARD))));
   const [moment, setMoment] = useState<Moment | null>(null);
   const [results, setResults] = useState(game.status === 'over');
   const [sheet, setSheet] = useState<'rules' | 'menu' | null>(null);
@@ -59,48 +62,60 @@ export function Game(props: GameProps) {
   const { turn } = game;
   const legal = legalMoves(game);
 
-  function act(action: Action) {
+  function roll(dice: number[]) {
     if (busy) return;
     const before = game;
-    const after = applyAction(before, action);
-    setPicked(null);
-    setChoosing(null);
-    const land = (ms: number) => {
-      if (ms <= 0) return settle(before, after);
-      timer.current = setTimeout(() => settle(before, after), ms);
-    };
-
-    if (action.type === 'roll') {
-      if (reducedMotion()) {
-        sfx.roll();
-        return land(0);
-      }
-      const tray = trayRef.current?.getBoundingClientRect();
-      const board = boardRef.current?.getBoundingClientRect();
-      const flight = tray && board ? { values: action.dice, tray, board, duration: ROLL_MS } : null;
-      sfx.roll(ROLL_MS / 1000);
-      setBusy({ kind: 'roll', flight });
-      return land(ROLL_MS);
+    const after = applyAction(before, { type: 'roll', dice });
+    setPicked([]);
+    if (reducedMotion()) {
+      sfx.roll();
+      return settle(before, after, after.events);
     }
-    const m = action.move;
-    const to = m.from === YARD ? 0 : m.from + m.die;
-    const path = m.from === YARD ? [0] : Array.from({ length: to - m.from }, (_, i) => m.from + 1 + i);
-    if (reducedMotion()) return land(0);
-    const stepMs = path.length > 8 ? 85 : 120;
-    const moving: Moving = { id: Date.now(), color: before.turn.color, from: m.from, count: m.kind === 'pair' ? 2 : 1, path, stepMs, onStep: sfx.step };
-    setBusy({ kind: 'move', moving });
-    land(30 + path.length * stepMs + 90);
+    const tray = trayRef.current?.getBoundingClientRect();
+    const board = boardRef.current?.getBoundingClientRect();
+    const flight = tray && board ? { values: dice, tray, board, duration: ROLL_MS } : null;
+    sfx.roll(ROLL_MS / 1000);
+    setBusy({ kind: 'roll', flight });
+    timer.current = setTimeout(() => settle(before, after, after.events), ROLL_MS);
   }
 
-  /** Apply an action's result once its animation has landed. */
-  function settle(before: GameState, after: GameState) {
+  /** Play one move, or two on the same man (both dice), as a single hop. */
+  function move(moves: Move[]) {
+    if (busy || moves.length === 0) return;
+    const before = game;
+    let after = before;
+    const events: GameEvent[] = [];
+    for (const m of moves) {
+      after = applyAction(after, { type: 'move', move: m });
+      events.push(...after.events);
+    }
+    setPicked([]);
+    const from = moves[0]!.from;
+    const to = landing(moves);
+    const path = from === YARD ? Array.from({ length: to + 1 }, (_, i) => i) : Array.from({ length: to - from }, (_, i) => from + 1 + i);
+    if (reducedMotion()) return settle(before, after, events);
+    const stepMs = path.length > 8 ? 85 : 120;
+    const count = moves[0]!.kind === 'pair' ? 2 : 1;
+    const moving: Moving = { id: Date.now(), color: before.turn.color, from, count, path, stepMs, onStep: sfx.step };
+    setBusy({ kind: 'move', moving });
+    timer.current = setTimeout(() => settle(before, after, events), 30 + path.length * stepMs + 90);
+  }
+
+  /** Apply the result once its animation has landed. `events` covers every step of a chained move. */
+  function settle(before: GameState, after: GameState, events: GameEvent[]) {
     setBusy(null);
     onChange(after);
-    playSounds(before, after);
+    const seen = { ...after, events };
+    playSounds(before, seen);
 
-    const rolled = after.events.find((e) => e.type === 'rolled');
-    if (rolled) setLastRoll({ color: rolled.color, dice: rolled.dice, noMoves: after.events.some((e) => e.type === 'noMoves') });
-    setMoment(pickMoment(after, before.turn.color));
+    const rolled = events.find((e) => e.type === 'rolled');
+    if (rolled) setLastRoll({ color: rolled.color, dice: rolled.dice, noMoves: events.some((e) => e.type === 'noMoves') });
+    let m = pickMoment(seen, before.turn.color);
+    if (m?.kind === 'born') {
+      if (bornSeen.has(m.color)) m = null;
+      else setBornSeen(new Set([...bornSeen, m.color]));
+    }
+    setMoment(m);
 
     const firstWinner = before.placements.length === 0 && after.placements.length > 0;
     if (after.status === 'over' || firstWinner) setResults(true);
@@ -109,13 +124,6 @@ export function Game(props: GameProps) {
       setView('turnOver');
     }
   }
-
-  const tapMan = (from: Progress) => {
-    if (busy) return;
-    const options = optionsAt(legal, from, picked);
-    if (options.length === 1) act({ type: 'move', move: options[0]! });
-    else if (options.length > 1) setChoosing(from);
-  };
 
   // --- Screens that replace the board ---------------------------------------------------------
 
@@ -155,21 +163,46 @@ export function Game(props: GameProps) {
   // Taps are ignored while dice are in the air or a man is hopping.
   const playing = view === 'play' && !busy;
 
-  const movable = playing && turn.phase === 'move' ? movesForDie(legal, picked).map((m) => m.from) : [];
+  // Die first, then the man. With only one die that can move anything, it is picked for you.
+  const moving = turn.phase === 'move' && view === 'play';
+  const usable = moving ? usableDice(game) : [];
+  const pickedIdx = picked.filter((i) => usable.includes(i));
+  const chosen = pickedIdx.length === 0 && usable.length === 1 ? usable : pickedIdx;
+  const chosenValues = chosen.map((i) => turn.rolled[i]!);
+  const targets = moving ? tapTargets(game, chosenValues) : [];
+  const movable = playing ? targets.map((t) => t.from) : [];
   // A block on the board that can move together, versus a double 6 that can born two men.
   const pairLegal = legal.some((m) => m.kind === 'pair' && m.from !== YARD);
   const bornTwo = legal.some((m) => m.kind === 'pair' && m.from === YARD);
+
+  // Zoom in on this player's men and everywhere they could go while choosing a move.
+  const focus: Focus | undefined = moving
+    ? {
+        color: turn.color,
+        spots: [...legal.map((m) => m.from), ...legal.map((m) => landing([m])), ...tapTargets(game, turn.dice).map((t) => t.to)],
+        here: legal.map((m) => m.from),
+        there: targets.map((t) => t.to),
+      }
+    : undefined;
+
+  const togglePick = (i: number) => {
+    if (!usable.includes(i)) return;
+    setPicked(chosen.includes(i) ? chosen.filter((x) => x !== i) : [...chosen, i]);
+  };
+  const tapMan = (from: Progress) => {
+    if (busy) return;
+    const plan = planTap(game, from, chosenValues);
+    if (plan) move(plan);
+  };
 
   let dice: DieView[];
   if (view === 'turnOver' && lastRoll) dice = lastRoll.dice.map((value) => ({ value, used: true }));
   else if (turn.phase === 'roll') dice = Array.from({ length: game.rules.diceMode === 'two' ? 2 : 1 }, () => ({ value: null }));
   else {
     const used = usedFlags(turn.rolled, turn.dice);
-    dice = turn.rolled.map((value, i) => ({ value, used: used[i], selected: picked === value && !used[i] }));
+    dice = turn.rolled.map((value, i) => ({ value, used: used[i] || (!usable.includes(i) && moving), selected: chosen.includes(i) }));
   }
-  // Picking a die only matters when two different numbers are left and each can move something.
-  const canPick =
-    playing && turn.phase === 'move' && turn.dice.length === 2 && turn.dice[0] !== turn.dice[1] && turn.dice.every((d) => legal.some((m) => m.die === d));
+  const canPick = playing && moving && usable.length > 1;
 
   const isDouble = turn.phase === 'move' && turn.rolled.length === 2 && turn.rolled[0] === turn.rolled[1];
   const shout = playing && isDouble ? t.double(turn.rolled[0]!, pairLegal) : '';
@@ -204,6 +237,7 @@ export function Game(props: GameProps) {
           onTapMan={playing ? tapMan : undefined}
           names={Object.fromEntries(game.players.map((p) => [p.color, p.name]))}
           moving={busy?.kind === 'move' ? busy.moving : undefined}
+          focus={focus}
         />
       </div>
 
@@ -220,8 +254,8 @@ export function Game(props: GameProps) {
               theme={theme}
               dice={dice}
               rolling={busy?.kind === 'roll'}
-              onRoll={playing && turn.phase === 'roll' ? () => act({ type: 'roll', dice: rollDice(game.rules.diceMode) }) : undefined}
-              onPick={canPick ? (i) => setPicked(picked === turn.rolled[i] ? null : turn.rolled[i]!) : undefined}
+              onRoll={playing && turn.phase === 'roll' ? () => roll(rollDice(game.rules.diceMode)) : undefined}
+              onPick={canPick ? togglePick : undefined}
             />
           </div>
         </div>
@@ -252,45 +286,23 @@ export function Game(props: GameProps) {
                   ? 'No man could move that time, but the 6 gives you another roll.'
                   : game.men[turn.color].every((p) => p === YARD || p === HEAVEN)
                     ? 'You need a 6 to born a man.'
-                    : 'Then tap a glowing man to move him.'}
+                    : 'Then tap a die, and the man it moves.'}
               </HintBody>
-            </>
-          ) : choosing !== null ? (
-            <>
-              <HintTitle>Which move?</HintTitle>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
-                {optionsAt(legal, choosing, picked).map((m) => (
-                  <ChoiceButton key={`${m.kind}${m.die}`} onClick={() => act({ type: 'move', move: m })}>
-                    {optionLabel(m, game.men[turn.color].filter((p) => p === choosing).length)}
-                  </ChoiceButton>
-                ))}
-                <ChoiceButton ghost onClick={() => setChoosing(null)}>
-                  Cancel
-                </ChoiceButton>
-              </div>
             </>
           ) : (
-            <>
-              <HintTitle>
-                {pairLegal ? 'Tap your block to move it together.' : bornTwo ? 'Tap your yard to born.' : 'Tap a glowing man to move.'}
-              </HintTitle>
-              <HintBody>
-                {pairLegal
-                  ? 'Or tap it and pick one man to split off.'
-                  : bornTwo
-                    ? 'Double 6 can born two men at once.'
-                  : canPick
-                    ? 'Tip: tap a die first to pick which number to use.'
-                    : turn.dice.length === 1 && turn.rolled.length === 2
-                      ? `You have a ${turn.dice[0]} left to use.`
-                      : ''}
-              </HintBody>
-            </>
+            <MoveHint
+              chosen={chosenValues}
+              left={usable.length}
+              targets={targets.length}
+              pairLegal={pairLegal}
+              bornTwo={bornTwo}
+              yardReady={targets.some((x) => x.from === YARD)}
+            />
           )}
         </HintCard>
 
         {testDice && playing && turn.phase === 'roll' && (
-          <TestDice count={game.rules.diceMode === 'two' ? 2 : 1} onRoll={(dice) => act({ type: 'roll', dice })} />
+          <TestDice count={game.rules.diceMode === 'two' ? 2 : 1} onRoll={roll} />
         )}
 
         {view === 'play' && (
@@ -308,6 +320,7 @@ export function Game(props: GameProps) {
       {sheet === 'menu' && (
         <Menu
           theme={theme}
+          onChangeTheme={onChangeTheme}
           patois={patois}
           muted={muted}
           onTogglePatois={onTogglePatois}
@@ -392,29 +405,68 @@ const HintTitle = ({ children }: { children: ReactNode }) => <div style={{ fontS
 const HintBody = ({ children }: { children: ReactNode }) =>
   children ? <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.35, opacity: 0.92 }}>{children}</div> : null;
 
-function ChoiceButton({ children, onClick, ghost }: { children: ReactNode; onClick: () => void; ghost?: boolean }) {
+/** What to do next while choosing a move: pick a die, then a man. */
+function MoveHint({
+  chosen,
+  left,
+  targets,
+  pairLegal,
+  bornTwo,
+  yardReady,
+}: {
+  chosen: number[];
+  left: number;
+  targets: number;
+  pairLegal: boolean;
+  bornTwo: boolean;
+  yardReady: boolean;
+}) {
+  if (chosen.length === 0) {
+    return (
+      <>
+        <HintTitle>Tap a die, then the man it moves.</HintTitle>
+        <HintBody>
+          {pairLegal
+            ? 'Tap both dice, then your block, to move it together.'
+            : bornTwo
+              ? 'Tap both sixes, then your yard, to born two men.'
+              : left > 1
+                ? 'Tap both dice to move one man by both.'
+                : ''}
+        </HintBody>
+      </>
+    );
+  }
+  if (targets === 0) {
+    return (
+      <>
+        <HintTitle>No man can take {chosen.join(' + ')}.</HintTitle>
+        <HintBody>Tap a die to unpick it and try one.</HintBody>
+      </>
+    );
+  }
+  const total = chosen.length === 2 ? `${chosen[0]} + ${chosen[1]}` : String(chosen[0]);
   return (
-    <button
-      onClick={onClick}
-      style={{
-        minHeight: 44,
-        padding: '0 14px',
-        borderRadius: 12,
-        fontSize: 16,
-        fontWeight: 900,
-        cursor: 'pointer',
-        ...(ghost
-          ? { background: 'transparent', color: 'inherit', border: '2px solid rgba(255,255,255,0.25)' }
-          : { background: GOLD_BUTTON, color: DARK_INK, border: `2px solid ${DARK_INK}`, boxShadow: `0 3px 0 ${DARK_INK}` }),
-      }}
-    >
-      {children}
-    </button>
+    <>
+      <HintTitle>
+        {yardReady && chosen.every((d) => d === 6)
+          ? chosen.length === 2
+            ? 'Tap your yard to born two men.'
+            : 'Tap your yard to born a man, or a man to move him 6.'
+          : pairLegal && chosen.length === 2
+            ? 'Tap your block to move it together.'
+            : `Now tap a man to move him ${total}.`}
+      </HintTitle>
+      <HintBody>
+        {chosen.length === 1 && left > 1 ? 'Or tap the other die too, to use both on one man.' : 'The dashed squares show where they would land.'}
+      </HintBody>
+    </>
   );
 }
 
 function Menu({
   theme,
+  onChangeTheme,
   patois,
   muted,
   onTogglePatois,
@@ -423,6 +475,7 @@ function Menu({
   onClose,
 }: {
   theme: Theme;
+  onChangeTheme: (id: ThemeId) => void;
   patois: boolean;
   muted: boolean;
   onTogglePatois: () => void;
@@ -456,6 +509,40 @@ function Menu({
           animation: 'ludi-pop 0.15s ease-out',
         }}
       >
+        <div style={{ fontSize: 12, fontWeight: 900, letterSpacing: 1.5, textTransform: 'uppercase', opacity: 0.8 }}>Board</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+          {THEME_IDS.map((id) => {
+            const t = getTheme(id);
+            const on = id === theme.id;
+            return (
+              <button
+                key={id}
+                onClick={() => onChangeTheme(id)}
+                aria-pressed={on}
+                style={{
+                  minHeight: 48,
+                  padding: '6px 8px',
+                  borderRadius: 10,
+                  background: 'rgba(0,0,0,0.3)',
+                  border: `2px solid ${on ? HIGHLIGHT : 'rgba(255,255,255,0.12)'}`,
+                  color: 'inherit',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                }}
+              >
+                <div style={{ display: 'flex', gap: 2, height: 10, width: '100%' }} aria-hidden="true">
+                  {t.cycle.map((c, i) => (
+                    <div key={i} style={{ flex: 1, background: c, borderRadius: 2 }} />
+                  ))}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 900 }}>{t.name.replace(/ Edition$/, '')}</span>
+              </button>
+            );
+          })}
+        </div>
         <button onClick={onToggleSound} style={menuItem(theme)} aria-pressed={!muted}>
           <span>Sound</span>
           <span style={{ color: theme.callout }}>{muted ? 'Off' : 'On'}</span>
