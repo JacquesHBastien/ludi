@@ -6,6 +6,8 @@ export const PREFS_KEY = 'ludi.prefs.v1';
 export interface Prefs {
   patois: boolean;
   muted: boolean;
+  /** Keep the board zoomed in on the current player's men for the whole turn. */
+  closeUp: boolean;
   /** Board for the current (or last) game. */
   themeId: ThemeId;
   rules: Rules;
@@ -16,6 +18,7 @@ export interface Prefs {
 export const DEFAULT_PREFS: Prefs = {
   patois: true,
   muted: false,
+  closeUp: false,
   themeId: DEFAULT_THEME,
   rules: DEFAULT_RULES,
   names: {},

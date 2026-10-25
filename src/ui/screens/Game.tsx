@@ -10,6 +10,7 @@ import { IconButton, PrimaryButton, Screen } from '../kit';
 import { Icons } from '../icons';
 import { display, seatInfo } from '../style';
 import { rollDice } from '../random';
+import { chooseMove } from '../../ai/bot';
 import { sfx } from '../sound';
 import { landing, nextColor, pickMoment, planTap, tapTargets, usableDice, usedFlags, type Moment } from '../turn';
 import { GameOver } from './GameOver';
@@ -22,6 +23,8 @@ interface GameProps {
   theme: Theme;
   patois: boolean;
   muted: boolean;
+  closeUp: boolean;
+  onToggleCloseUp: () => void;
   /** Dev only: lets the tester choose the dice. */
   testDice?: boolean;
   onChange: (game: GameState) => void;
@@ -40,8 +43,13 @@ const ROLL_MS = 1700;
 const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 export function Game(props: GameProps) {
-  const { game, theme, patois, muted, testDice, onChange, onTogglePatois, onToggleSound, onChangeTheme, onHome, onPlayAgain } = props;
-  const [view, setView] = useState<View>('handoff');
+  const { game, theme, patois, muted, closeUp, onToggleCloseUp, testDice, onChange, onTogglePatois, onToggleSound, onChangeTheme, onHome, onPlayAgain } = props;
+  const levelOf = (c: Color) => game.players.find((p) => p.color === c)?.computer;
+  const people = game.players.filter((p) => !p.computer);
+  // Pass-the-phone only matters with two or more people; computers never get the handoff screen.
+  const [view, setView] = useState<View>(() => (people.length <= 1 || levelOf(game.turn.color) ? 'play' : 'handoff'));
+  /** The last person (not computer) who played, so we only hand the phone over when it changes hands. */
+  const [lastPerson, setLastPerson] = useState<Color | null>(() => (levelOf(game.turn.color) ? null : game.turn.color));
   const [doneBy, setDoneBy] = useState<Color | null>(null);
   const [lastRoll, setLastRoll] = useState<{ color: Color; dice: number[]; noMoves: boolean } | null>(null);
   /** Dice the player has tapped, as indexes into turn.rolled. A man is tapped after. */
@@ -120,10 +128,44 @@ export function Game(props: GameProps) {
     const firstWinner = before.placements.length === 0 && after.placements.length > 0;
     if (after.status === 'over' || firstWinner) setResults(true);
     if (after.status === 'playing' && after.turn.color !== before.turn.color) {
-      setDoneBy(before.turn.color);
-      setView('turnOver');
+      const actor = before.turn.color;
+      const nextUp = after.turn.color;
+      const holder = levelOf(actor) ? lastPerson : actor;
+      if (!levelOf(actor)) setLastPerson(actor);
+      setDoneBy(actor);
+      // Hand the phone over only when the next player is a different person.
+      setView(!levelOf(nextUp) && people.length > 1 && nextUp !== holder ? 'turnOver' : 'play');
     }
   }
+
+  // Computers roll, pick a die (so you can see it), and move, at a pace you can follow.
+  const botLevel = levelOf(turn.color);
+  useEffect(() => {
+    if (!botLevel || view !== 'play' || busy || moment || results || game.status !== 'playing') return;
+    if (game.turn.phase === 'roll') {
+      const t = setTimeout(() => roll(rollDice(game.rules.diceMode)), 900);
+      return () => clearTimeout(t);
+    }
+    const m = chooseMove(game, botLevel);
+    const used = usedFlags(game.turn.rolled, game.turn.dice);
+    const free = game.turn.rolled.flatMap((d, i) => (!used[i] && d === m.die ? [i] : []));
+    const t1 = setTimeout(() => setPicked(m.kind === 'pair' ? free.slice(0, 2) : free.slice(0, 1)), 450);
+    const t2 = setTimeout(() => move([m]), 1150);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+    // roll and move are recreated every render; the effect re-runs on every state change anyway.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [game, view, busy, moment, results, botLevel]);
+
+  // A computer's big moments clear themselves so its turn keeps going.
+  useEffect(() => {
+    if (!moment || !levelOf(moment.color)) return;
+    const t = setTimeout(() => setMoment(null), moment.kind === 'kill' ? 2200 : 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moment]);
 
   // --- Screens that replace the board ---------------------------------------------------------
 
@@ -161,7 +203,7 @@ export function Game(props: GameProps) {
   const me = seatInfo(theme, active, game);
   const next = seatInfo(theme, view === 'turnOver' ? turn.color : nextColor(game, turn.color), game);
   // Taps are ignored while dice are in the air or a man is hopping.
-  const playing = view === 'play' && !busy;
+  const playing = view === 'play' && !busy && !botLevel;
 
   // Die first, then the man. With only one die that can move anything, it is picked for you.
   const moving = turn.phase === 'move' && view === 'play';
@@ -176,14 +218,22 @@ export function Game(props: GameProps) {
   const bornTwo = legal.some((m) => m.kind === 'pair' && m.from === YARD);
 
   // Zoom in on this player's men and everywhere they could go while choosing a move.
+  // Close-up keeps the zoom on for the whole turn (rolling too) and goes in tighter.
+  const ownOut = game.men[turn.color].filter((p) => p !== HEAVEN && p !== YARD);
   const focus: Focus | undefined = moving
     ? {
         color: turn.color,
-        spots: [...legal.map((m) => m.from), ...legal.map((m) => landing([m])), ...tapTargets(game, turn.dice).map((t) => t.to)],
+        // Close-up frames just your men and the picked die's landings; the auto zoom fits every possible landing.
+        spots: closeUp
+          ? [...legal.map((m) => m.from), ...targets.map((t) => t.to)]
+          : [...legal.map((m) => m.from), ...legal.map((m) => landing([m])), ...tapTargets(game, turn.dice).map((t) => t.to)],
         here: legal.map((m) => m.from),
         there: targets.map((t) => t.to),
+        tight: closeUp,
       }
-    : undefined;
+    : closeUp && view === 'play'
+      ? { color: turn.color, spots: ownOut.length ? ownOut : [YARD], here: ownOut, there: [], tight: true }
+      : undefined;
 
   const togglePick = (i: number) => {
     if (!usable.includes(i)) return;
@@ -193,6 +243,11 @@ export function Game(props: GameProps) {
     if (busy) return;
     const plan = planTap(game, from, chosenValues);
     if (plan) move(plan);
+  };
+  /** Tapping a dashed landing square makes the move that lands there. */
+  const tapSquare = (to: Progress) => {
+    const target = targets.find((t) => t.to === to);
+    if (target) tapMan(target.from);
   };
 
   let dice: DieView[];
@@ -208,7 +263,7 @@ export function Game(props: GameProps) {
   const shout = playing && isDouble ? t.double(turn.rolled[0]!, pairLegal) : '';
 
   return (
-    <Screen theme={theme}>
+    <Screen theme={theme} padding="12px 10px 16px">
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 44 }}>
         <IconButton label="Menu" trim={theme.trim} onClick={() => setSheet('menu')}>
           {Icons.menu}
@@ -228,7 +283,7 @@ export function Game(props: GameProps) {
 
       <PlayerStrip theme={theme} game={game} active={active} />
 
-      <div ref={boardRef} style={{ width: '100%', maxWidth: 354, alignSelf: 'center' }}>
+      <div ref={boardRef} style={{ width: '100%', alignSelf: 'center', position: 'relative' }}>
         <Board
           theme={theme}
           seats={game.seats}
@@ -238,7 +293,33 @@ export function Game(props: GameProps) {
           names={Object.fromEntries(game.players.map((p) => [p.color, p.name]))}
           moving={busy?.kind === 'move' ? busy.moving : undefined}
           focus={focus}
+          onTapSquare={playing ? tapSquare : undefined}
+          active={view === 'play' ? turn.color : undefined}
         />
+        <button
+          onClick={onToggleCloseUp}
+          aria-pressed={closeUp}
+          aria-label={closeUp ? 'Close-up on: show the whole board while rolling' : 'Close-up: zoom in on your men'}
+          style={{
+            position: 'absolute',
+            right: -4,
+            bottom: -4,
+            width: 44,
+            height: 44,
+            borderRadius: 22,
+            border: `2px solid ${closeUp ? HIGHLIGHT : theme.trim}`,
+            background: closeUp ? HIGHLIGHT : theme.frame,
+            color: closeUp ? '#1B1714' : theme.ink,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 3px 8px rgba(0,0,0,0.5)',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          {closeUp ? Icons.zoomOut : Icons.zoomIn}
+        </button>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
@@ -271,6 +352,15 @@ export function Game(props: GameProps) {
               <PrimaryButton height={54} style={{ fontSize: 19, marginTop: 6 }} onClick={() => setView('handoff')}>
                 Pass to {next.name}
               </PrimaryButton>
+            </>
+          ) : botLevel ? (
+            <>
+              <HintTitle>{busy?.kind === 'roll' ? 'Rolling…' : `${me.name} is thinking…`}</HintTitle>
+              <HintBody>
+                {lastRoll?.noMoves && lastRoll.color !== turn.color
+                  ? `${seatInfo(theme, lastRoll.color, game).name} couldn't move with ${lastRoll.dice.join(' + ')}.`
+                  : `Computer · ${botLevel[0]!.toUpperCase()}${botLevel.slice(1)}`}
+              </HintBody>
             </>
           ) : turn.phase === 'roll' ? (
             <>
@@ -351,6 +441,7 @@ function PlayerStrip({ theme, game, active }: { theme: Theme; game: GameState; a
               padding: '7px 4px',
               borderRadius: 10,
               minWidth: 0,
+              position: 'relative',
               ...(on
                 ? {
                     background: s.paint,
@@ -375,6 +466,15 @@ function PlayerStrip({ theme, game, active }: { theme: Theme; game: GameState; a
               {s.name}
             </div>
             <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.9 }}>{s.home}/4 home</div>
+            {game.players.find((p) => p.color === c)?.computer && (
+              <span
+                title="Computer"
+                aria-label="Computer"
+                style={{ position: 'absolute', top: 3, right: 4, transform: 'scale(0.6)', transformOrigin: 'top right', opacity: 0.85 }}
+              >
+                {Icons.computer}
+              </span>
+            )}
           </div>
         );
       })}
@@ -458,7 +558,7 @@ function MoveHint({
             : `Now tap a man to move him ${total}.`}
       </HintTitle>
       <HintBody>
-        {chosen.length === 1 && left > 1 ? 'Or tap the other die too, to use both on one man.' : 'The dashed squares show where they would land.'}
+        Or tap the dashed square to land there.{chosen.length === 1 && left > 1 ? ' Tap the other die too to use both.' : ''}
       </HintBody>
     </>
   );

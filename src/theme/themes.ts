@@ -21,7 +21,8 @@ export const CAP: Record<Color, { edge: string; markFill: string; labelInk: stri
   red: { edge: '#1B1714', markFill: '#F4E9D4', labelInk: '#F4E9D4' },
   gold: { edge: '#1B1714', markFill: '#1B1714', labelInk: '#1B1714' },
   green: { edge: '#1B1714', markFill: '#F4E9D4', labelInk: '#F4E9D4' },
-  black: { edge: '#E8D9B8', markFill: '#E8B21C', labelInk: '#F4E9D4' },
+  // Cream mark (not gold) so black never reads as an inverted gold cap.
+  black: { edge: '#E8D9B8', markFill: '#F4E9D4', labelInk: '#F4E9D4' },
 };
 
 /** The gold used for legal-move glows and block badges. */

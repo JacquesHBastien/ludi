@@ -11,9 +11,10 @@ interface HomeProps {
   canContinue: boolean;
   onContinue: () => void;
   onNewGame: () => void;
+  onVsComputer: () => void;
 }
 
-export function Home({ canContinue, onContinue, onNewGame }: HomeProps) {
+export function Home({ canContinue, onContinue, onNewGame, onVsComputer }: HomeProps) {
   const [rules, setRules] = useState(false);
 
   return (
@@ -43,6 +44,10 @@ export function Home({ canContinue, onContinue, onNewGame }: HomeProps) {
             Play on this phone
           </PrimaryButton>
         )}
+        <SecondaryButton onClick={onVsComputer}>
+          {Icons.computer}
+          Play against the computer
+        </SecondaryButton>
         <SecondaryButton disabled>
           {Icons.globe}
           Start an online game

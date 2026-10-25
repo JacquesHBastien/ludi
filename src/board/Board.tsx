@@ -42,11 +42,17 @@ export interface BoardProps {
    * (where his men stand) and `there` squares a dashed one (where the picked dice would land them).
    */
   focus?: Focus;
+  /** Tap a dashed landing square to make the move that lands there. */
+  onTapSquare?: (to: Progress) => void;
+  /** Whose turn it is: their men get a halo and everyone else's fade back a little. */
+  active?: Color;
 }
 
 export interface Focus {
   color: Color;
   spots: Progress[];
+  /** Close-up: zoom in tighter than the automatic zoom does. */
+  tight?: boolean;
   here: Progress[];
   there: Progress[];
 }
@@ -74,12 +80,12 @@ interface Piece {
   label: string;
 }
 
-export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving, frame = 9, focus }: BoardProps) {
+export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving, frame = 9, focus, onTapSquare, active }: BoardProps) {
   const id = useId();
   const glowId = `${id}glow`;
   const shadowId = `${id}shadow`;
   const shown = moving ? withoutMoving(men, moving) : men;
-  const box = focus ? zoomBox(focus.color, focus.spots) : { x: 0, y: 0, size: BOARD_PX };
+  const box = focus ? zoomBox(focus.color, focus.spots, focus.tight ? 6 : 8.5, focus.tight ? 0.6 : 1.2) : { x: 0, y: 0, size: BOARD_PX };
   const zoom = BOARD_PX / box.size;
   // Zoomed in, men shrink a little so the color of the square they stand on shows around them.
   const pieces = layoutPieces(theme, seats, shown, movable, names, zoom > 1.15 ? 15 : SIZE.board);
@@ -129,9 +135,16 @@ export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving
             )}
             {focus && <SquareMarks focus={focus} />}
             {ordered.map((p) => (
-              <PieceView key={p.key} piece={p} fill={theme.players[p.color]} filter={p.legal ? glowId : shadowId} />
+              <PieceView
+                key={p.key}
+                piece={p}
+                fill={theme.players[p.color]}
+                filter={p.legal ? glowId : shadowId}
+                emphasis={!active ? 'normal' : p.color === active ? 'mine' : 'faded'}
+              />
             ))}
             {moving && <Hopper key={moving.id} moving={moving} men={men} fill={theme.players[moving.color]} filter={shadowId} />}
+            {focus && onTapSquare && <SquareHits focus={focus} onTap={onTapSquare} />}
             {onTapMan &&
               ordered
                 .filter((p) => p.legal)
@@ -159,6 +172,40 @@ export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving
         </div>
       </div>
     </div>
+  );
+}
+
+/** Landing squares as tap targets, under the men's own tap areas so tapping a man still picks the man. */
+function SquareHits({ focus, onTap }: { focus: Focus; onTap: (to: Progress) => void }) {
+  return (
+    <g>
+      {[...new Set(focus.there)].map((p) => {
+        const cell = cellOf(focus.color, p);
+        if (!cell) return null;
+        const { x, y, w, h } = cellRect(cell);
+        return (
+          <rect
+            key={`hit${p}`}
+            x={x - 2}
+            y={y - 2}
+            width={w + 4}
+            height={h + 4}
+            fill="transparent"
+            role="button"
+            tabIndex={0}
+            aria-label="Move here"
+            style={{ cursor: 'pointer', outline: 'none' }}
+            onClick={() => onTap(p)}
+            onKeyDown={(e: KeyboardEvent) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onTap(p);
+              }
+            }}
+          />
+        );
+      })}
+    </g>
   );
 }
 
@@ -317,18 +364,26 @@ function Paint({ theme }: { theme: Theme }) {
   );
 }
 
-function PieceView({ piece, fill, filter }: { piece: Piece; fill: string; filter: string }) {
+type Emphasis = 'normal' | 'mine' | 'faded';
+
+function PieceView({ piece, fill, filter, emphasis = 'normal' }: { piece: Piece; fill: string; filter: string; emphasis?: Emphasis }) {
   const { at, size, count, color } = piece;
+  const cx = at.x + (count > 1 ? 1.5 : 0);
+  const cy = at.y + (count > 1 ? 1.5 : 0);
   const cap = (dx: number, key: string) => (
     <g key={key} transform={`translate(${at.x - size / 2 + dx} ${at.y - size / 2 + dx}) scale(${size / 20})`}>
       <CapShape color={color} fill={fill} />
     </g>
   );
   return (
-    <g filter={`url(#${filter})`} role="img" aria-label={piece.label}>
+    <g filter={`url(#${filter})`} role="img" aria-label={piece.label} opacity={emphasis === 'faded' ? 0.6 : 1}>
+      {emphasis === 'mine' && !piece.legal && (
+        // Every man of the player whose turn it is gets a soft halo, so you can find yourself at a glance.
+        <circle cx={cx} cy={cy} r={size / 2 + 2.5} fill="rgba(255,255,255,0.18)" stroke="#F4E9D4" strokeOpacity={0.85} strokeWidth={1.6} />
+      )}
       {piece.legal && (
         // A pulsing gold ring makes movable men easy to spot even at 19px.
-        <circle cx={at.x + (count > 1 ? 1.5 : 0)} cy={at.y + (count > 1 ? 1.5 : 0)} r={size / 2 + 3.5} fill="none" stroke={HIGHLIGHT} strokeWidth={2.5}>
+        <circle cx={cx} cy={cy} r={size / 2 + 3.5} fill="none" stroke={HIGHLIGHT} strokeWidth={2.5}>
           <animate attributeName="stroke-opacity" values="1;0.35;1" dur="1.4s" repeatCount="indefinite" />
         </circle>
       )}

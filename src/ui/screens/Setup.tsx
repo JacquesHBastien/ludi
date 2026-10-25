@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { COLORS, isDiagonal, type Color, type Rules } from '../../engine';
+import { COLORS, isDiagonal, type BotLevel, type Color, type Rules } from '../../engine';
+import { botName } from '../../ai/names';
 import { Board } from '../../board/Board';
 import { CapIcon } from '../../board/Cap';
 import { HIGHLIGHT, THEME_IDS, getTheme, type ThemeId } from '../../theme/themes';
@@ -8,7 +9,7 @@ import { Icons } from '../icons';
 import { DARK_INK, ROOTS, display, seatInfo } from '../style';
 
 export interface SetupResult {
-  seats: { color: Color; name: string }[];
+  seats: { color: Color; name: string; computer?: BotLevel }[];
   themeId: ThemeId;
   rules: Rules;
   /** What was typed, empty names included, to remember for next time. */
@@ -17,9 +18,20 @@ export interface SetupResult {
 
 interface SetupProps {
   initial: { themeId: ThemeId; rules: Rules; names: Partial<Record<Color, string>> };
+  /** Start with you on St. Elizabeth and three computers, from "Play against the computer". */
+  vsComputer?: boolean;
   onBack: () => void;
   onStart: (result: SetupResult) => void;
 }
+
+const LEVELS: { id: BotLevel; label: string }[] = [
+  { id: 'easy', label: 'Easy' },
+  { id: 'medium', label: 'Medium' },
+  { id: 'hard', label: 'Hard' },
+];
+
+/** Seats listed so each pair sits across the board: fill the first two and you're already diagonal. */
+const SEAT_LIST: Color[] = ['red', 'green', 'gold', 'black'];
 
 const NO_MEN: Record<Color, number[]> = { red: [], gold: [], green: [], black: [] };
 
@@ -29,19 +41,41 @@ const panel = {
   border: '1.5px solid rgba(255,255,255,0.08)',
 } as const;
 
-export function Setup({ initial, onBack, onStart }: SetupProps) {
+export function Setup({ initial, vsComputer, onBack, onStart }: SetupProps) {
   const [themeId, setThemeId] = useState(initial.themeId);
   const [rules, setRules] = useState(initial.rules);
   const [names, setNames] = useState(initial.names);
-  // Everyone starts as an empty "Add a player" row; the board comes first.
-  const [colors, setColors] = useState<Color[]>([]);
+  // Everyone starts as an empty "Add a player" row (the board comes first), unless playing the computer.
+  const [colors, setColors] = useState<Color[]>(vsComputer ? ['red', 'green', 'gold', 'black'] : []);
+  const [bots, setBots] = useState<Partial<Record<Color, BotLevel>>>(
+    vsComputer ? { green: 'medium', gold: 'medium', black: 'medium' } : {},
+  );
+  const [botNames, setBotNames] = useState<Partial<Record<Color, string>>>(() => {
+    if (!vsComputer) return {};
+    const taken = Object.values(initial.names).filter((n): n is string => !!n);
+    const out: Partial<Record<Color, string>> = {};
+    for (const c of ['green', 'gold', 'black'] as const) out[c] = botName([...taken, ...Object.values(out) as string[]]);
+    return out;
+  });
   const [justAdded, setJustAdded] = useState<Color | null>(null);
   const theme = getTheme(themeId);
 
   const playing = COLORS.filter((c) => colors.includes(c));
+  const takenNames = () => [...Object.values(names), ...Object.values(botNames)].filter((n): n is string => !!n);
+  const addComputer = (c: Color) => {
+    setColors([...colors, c]);
+    setBots({ ...bots, [c]: 'medium' });
+    setBotNames({ ...botNames, [c]: botName(takenNames()) });
+  };
+  const remove = (c: Color) => {
+    setColors(colors.filter((x) => x !== c));
+    setBots({ ...bots, [c]: undefined });
+  };
   const problem =
     playing.length < 2
       ? 'Add at least two players.'
+      : playing.every((c) => bots[c])
+        ? 'Add at least one person to play.'
       : playing.length === 2 && !isDiagonal(playing[0]!, playing[1]!)
         ? `Two players sit across from each other: ${pairName('red', 'green')}, or ${pairName('gold', 'black')}.`
         : null;
@@ -52,7 +86,11 @@ export function Setup({ initial, onBack, onStart }: SetupProps) {
 
   const start = () =>
     onStart({
-      seats: playing.map((c) => ({ color: c, name: names[c]?.trim() || seatInfo(theme, c).colorName })),
+      seats: playing.map((c) =>
+        bots[c]
+          ? { color: c, name: botNames[c] ?? seatInfo(theme, c).colorName, computer: bots[c] }
+          : { color: c, name: names[c]?.trim() || seatInfo(theme, c).colorName },
+      ),
       themeId,
       rules,
       typed: names,
@@ -111,38 +149,125 @@ export function Setup({ initial, onBack, onStart }: SetupProps) {
 
       <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <SectionLabel>Who's playing</SectionLabel>
-        {COLORS.map((c) => {
+        {SEAT_LIST.map((c) => {
           const seat = seatInfo(theme, c);
           const on = colors.includes(c);
           const id = `name-${c}`;
           if (!on) {
             return (
-              <button
-                key={c}
-                onClick={() => {
-                  setColors([...colors, c]);
-                  setJustAdded(c);
-                }}
-                style={{
-                  ...panel,
-                  border: `1.5px dashed ${ROOTS.trim}`,
-                  minHeight: 56,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  padding: '6px 12px 6px 6px',
-                  color: 'inherit',
-                  cursor: 'pointer',
-                  opacity: 0.85,
-                }}
-              >
+              <div key={c} style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => {
+                    setColors([...colors, c]);
+                    setJustAdded(c);
+                  }}
+                  style={{
+                    ...panel,
+                    flex: 1,
+                    minWidth: 0,
+                    border: `1.5px dashed ${ROOTS.trim}`,
+                    minHeight: 56,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '6px 12px 6px 6px',
+                    color: 'inherit',
+                    cursor: 'pointer',
+                    opacity: 0.85,
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={swatch}>
+                    <span style={{ opacity: 0.5 }}>
+                      <CapIcon color={c} fill={seat.paint} size={30} ring={false} />
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 16, fontWeight: 800 }}>Add a player for {seat.yard}</span>
+                </button>
+                <button
+                  onClick={() => addComputer(c)}
+                  aria-label={`Add a computer for ${seat.yard}`}
+                  style={{
+                    ...panel,
+                    border: `1.5px dashed ${ROOTS.trim}`,
+                    minWidth: 64,
+                    minHeight: 56,
+                    padding: '4px 8px',
+                    color: 'inherit',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 2,
+                    fontSize: 12,
+                    fontWeight: 900,
+                    opacity: 0.85,
+                  }}
+                >
+                  {Icons.computer}
+                  Computer
+                </button>
+              </div>
+            );
+          }
+          if (bots[c]) {
+            return (
+              <div key={c} style={{ ...panel, display: 'flex', alignItems: 'center', gap: 10, padding: '6px 8px 6px 6px' }}>
                 <div style={swatch}>
-                  <span style={{ opacity: 0.5 }}>
-                    <CapIcon color={c} fill={seat.paint} size={30} ring={false} />
-                  </span>
+                  <CapIcon color={c} fill={seat.paint} size={30} ring={false} />
                 </div>
-                <span style={{ fontSize: 16, fontWeight: 800 }}>Add a player for {seat.yard}</span>
-              </button>
+                <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, gap: 4 }}>
+                  <div style={display(17, { opacity: 0.85 })}>{seat.yard} · Computer</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 17, fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {botNames[c]}
+                    </span>
+                    <div role="radiogroup" aria-label={`How good is ${botNames[c]}?`} style={{ display: 'flex', marginLeft: 'auto', borderRadius: 9, overflow: 'hidden', border: `1.5px solid ${ROOTS.trim}` }}>
+                      {LEVELS.map((l) => (
+                        <button
+                          key={l.id}
+                          role="radio"
+                          aria-checked={bots[c] === l.id}
+                          onClick={() => setBots({ ...bots, [c]: l.id })}
+                          style={{
+                            minHeight: 34,
+                            padding: '0 8px',
+                            border: 'none',
+                            background: bots[c] === l.id ? HIGHLIGHT : 'transparent',
+                            color: bots[c] === l.id ? DARK_INK : ROOTS.ink,
+                            fontSize: 12,
+                            fontWeight: 900,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {l.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  aria-label={`Remove ${botNames[c]}`}
+                  onClick={() => remove(c)}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: 10,
+                    background: 'transparent',
+                    border: 'none',
+                    color: ROOTS.ink,
+                    opacity: 0.7,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  {Icons.close}
+                </button>
+              </div>
             );
           }
           return (
@@ -178,7 +303,7 @@ export function Setup({ initial, onBack, onStart }: SetupProps) {
               </div>
               <button
                 aria-label={`Remove ${names[c]?.trim() || seat.yard}`}
-                onClick={() => setColors(colors.filter((x) => x !== c))}
+                onClick={() => remove(c)}
                 style={{
                   width: 44,
                   height: 44,

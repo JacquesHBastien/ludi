@@ -20,6 +20,7 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>(() => (game?.status === 'playing' ? 'game' : 'home'));
   // Bumped for every new game so the game screen starts fresh.
   const [round, setRound] = useState(0);
+  const [vsComputer, setVsComputer] = useState(false);
 
   const setPrefs = (next: Prefs) => {
     setPrefsState(next);
@@ -41,11 +42,12 @@ export default function App() {
     return (
       <Setup
         initial={prefs}
+        vsComputer={vsComputer}
         onBack={() => setScreen('home')}
         onStart={(r: SetupResult) => {
           setPrefs({ ...prefs, themeId: r.themeId, rules: r.rules, names: r.typed });
           start(
-            r.seats.map((s) => ({ id: s.color, name: s.name, color: s.color })),
+            r.seats.map((s) => ({ id: s.color, name: s.name, color: s.color, ...(s.computer ? { computer: s.computer } : {}) })),
             r.rules,
           );
         }}
@@ -61,6 +63,8 @@ export default function App() {
         theme={getTheme(prefs.themeId)}
         patois={prefs.patois}
         muted={prefs.muted}
+        closeUp={prefs.closeUp}
+        onToggleCloseUp={() => setPrefs({ ...prefs, closeUp: !prefs.closeUp })}
         testDice={TEST_DICE}
         onChange={setGame}
         onTogglePatois={() => setPrefs({ ...prefs, patois: !prefs.patois })}
@@ -82,7 +86,14 @@ export default function App() {
         setRound((r) => r + 1);
         setScreen('game');
       }}
-      onNewGame={() => setScreen('setup')}
+      onNewGame={() => {
+        setVsComputer(false);
+        setScreen('setup');
+      }}
+      onVsComputer={() => {
+        setVsComputer(true);
+        setScreen('setup');
+      }}
     />
   );
 }

@@ -16,7 +16,17 @@ export function CapShape({ color, fill, ring = true }: CapProps) {
     <>
       <circle cx={10} cy={10} r={ring ? 8.7 : 8.6} fill={fill} stroke={edge} strokeWidth={ring ? 2.4 : 2.2} strokeDasharray="1.5 1.1" />
       {ring && <circle cx={10} cy={10} r={6.2} fill="none" stroke={edge} strokeOpacity={0.55} strokeWidth={0.8} />}
-      <path transform="translate(5 5) scale(0.5)" d={SHAPES[color].markPath} fill={markFill} />
+      {/* A bigger, outlined shape so color is never the only clue. */}
+      <path
+        transform="translate(4 4) scale(0.6)"
+        d={SHAPES[color].markPath}
+        fill={markFill}
+        stroke={color === 'gold' ? '#F4E9D4' : '#1B1714'}
+        strokeOpacity={0.6}
+        strokeWidth={1.4}
+        strokeLinejoin="round"
+        paintOrder="stroke"
+      />
     </>
   );
 }

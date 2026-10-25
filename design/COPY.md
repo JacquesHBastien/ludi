@@ -10,7 +10,7 @@ Patois is on by default and can be turned off in settings. Keep both versions.
 | Block | Block! | Blocked! |
 | Pawn reaches heaven | Reach heaven! | Home! |
 | Win | Run yard! | Run yard! |
-| Handoff button | Mi ready, mek mi roll | I'm ready |
+| Handoff button | Mi ready | I'm ready |
 
 Terms used in the UI: yard, born, kill, block, heaven, men (pieces).
 

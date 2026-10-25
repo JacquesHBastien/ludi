@@ -17,7 +17,7 @@ export function copy(patois: boolean) {
     blockShout: patois ? 'Block!' : 'Blocked!',
     heavenShout: patois ? 'Reach heaven!' : 'Home!',
     winShout: 'Run yard!',
-    ready: patois ? 'Mi ready, mek mi roll' : "I'm ready",
+    ready: patois ? 'Mi ready' : "I'm ready",
   };
 }
 

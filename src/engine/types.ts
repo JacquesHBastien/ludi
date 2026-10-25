@@ -7,11 +7,15 @@ export interface Rules {
   heavenless: boolean;
 }
 
+export type BotLevel = 'easy' | 'medium' | 'hard';
+
 export interface Player {
   id: string;
   name: string;
   /** Each player has one color. Two players sit diagonally (red/green or gold/black). */
   color: Color;
+  /** Set for a computer player. The engine ignores it; the UI plays its turns. */
+  computer?: BotLevel;
 }
 
 /**

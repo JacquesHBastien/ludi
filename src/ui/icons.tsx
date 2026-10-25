@@ -43,4 +43,23 @@ export const Icons = {
   ),
   join: icon(<path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" />, true),
   plus: icon(<path d="M12 5v14M5 12h14" />),
+  computer: icon(
+    <>
+      <rect x="4" y="7" width="16" height="12" rx="3" />
+      <path d="M12 7V4M9 12h.01M15 12h.01M9 16h6" />
+    </>,
+    true,
+  ),
+  zoomIn: icon(
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="M15.5 15.5L20 20M8 10.5h5M10.5 8v5" />
+    </>,
+  ),
+  zoomOut: icon(
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="M15.5 15.5L20 20M8 10.5h5" />
+    </>,
+  ),
 };

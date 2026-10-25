@@ -90,7 +90,7 @@ export function cellOf(c: Color, p: Progress): GridRect | null {
  * The part of the board to zoom to so these men and squares fill the view, as a square in px.
  * Never closer than `minUnits` grid units across, so there's always some context.
  */
-export function zoomBox(c: Color, spots: Progress[], minUnits = 8.5): { x: number; y: number; size: number } {
+export function zoomBox(c: Color, spots: Progress[], minUnits = 8.5, padUnits = 1.2): { x: number; y: number; size: number } {
   const pts: Point[] = [];
   for (const p of spots) {
     if (p === YARD) {
@@ -105,7 +105,7 @@ export function zoomBox(c: Color, spots: Progress[], minUnits = 8.5): { x: numbe
     }
   }
   if (pts.length === 0) return { x: 0, y: 0, size: BOARD_PX };
-  const pad = 1.2 * UNIT;
+  const pad = padUnits * UNIT;
   const minX = Math.min(...pts.map((p) => p.x)) - pad;
   const maxX = Math.max(...pts.map((p) => p.x)) + pad;
   const minY = Math.min(...pts.map((p) => p.y)) - pad;
