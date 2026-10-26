@@ -4,7 +4,7 @@
 // 0..LAST_TRACK = track, LANE_START.. = home lane, H = heaven.
 import { describe, expect, it } from 'vitest';
 import { COLORS, HEAVEN, LANE_START, LAST_TRACK, YARD, lastTrackIndex, locationOf, progressAt, startIndex, trackIndexOf } from './board';
-import { applyAction, blocks, createGame } from './engine';
+import { applyAction, blocks, createGame, isRevenge } from './engine';
 import type { Color } from './types';
 import { H, at, moves, pair, play, roll, scenario, single, sorted, sq } from './testkit';
 
@@ -514,6 +514,19 @@ describe('Stats', () => {
     s = play(roll(scenario({ rules: TWO, men: { red: [10, 10], green: [at('green', 14), at('green', 14)] } }), 4, 4), pair(10, 4));
     expect(s.stats.kills.red).toBe(2);
     expect(s.stats.killsBy.red.green).toBe(2);
+  });
+
+  it('remembers who last killed whom, so a pay-back counts as revenge, once', () => {
+    let s = play(roll(scenario({ rules: ONE, men: { red: [10], gold: [at('gold', 13)] } }), 3), single(10, 3));
+    expect(s.stats.lastKiller?.gold).toBe('red');
+    expect(isRevenge(s.stats, 'gold', 'red')).toBe(true); // gold owes red one
+    expect(isRevenge(s.stats, 'green', 'red')).toBe(false);
+    // Gold kills red back: revenge is paid, and now red owes gold.
+    s = { ...s, men: { ...s.men, gold: [at('gold', 17)], red: [20] }, turn: { ...s.turn, seat: 1, color: 'gold', phase: 'roll' } };
+    s = play(roll(s, 3), single(at('gold', 17), 3));
+    expect(s.men.red[0]).toBe(-1);
+    expect(s.stats.lastKiller?.gold).toBeUndefined();
+    expect(s.stats.lastKiller?.red).toBe('gold');
   });
 
   it('counts dice and sixes per color', () => {

@@ -2,6 +2,7 @@ import { useEffect, useId, useState, type KeyboardEvent } from 'react';
 import { HEAVEN, LANE_LENGTH, LAST_TRACK, YARD, type Color, type Progress } from '../engine';
 import { CAP, GRAIN, HIGHLIGHT, SLOT_INDEX, heavenColor, type Theme } from '../theme/themes';
 import { CapShape } from './Cap';
+import { SmackLayer, type Smack } from './Smack';
 import {
   BOARD_PX,
   cellOf,
@@ -48,6 +49,8 @@ export interface BoardProps {
   active?: Color;
   /** Men with a bounty on them get a red target. */
   bounties?: { color: Color; from: Progress }[];
+  /** A big kill: the victim pinballs off the frame into his yard. */
+  smack?: Smack;
 }
 
 export interface Focus {
@@ -55,6 +58,8 @@ export interface Focus {
   spots: Progress[];
   /** Close-up: zoom in tighter than the automatic zoom does. */
   tight?: boolean;
+  /** Never zoom in closer than this many squares across (overrides the default). */
+  minUnits?: number;
   here: Progress[];
   there: Progress[];
 }
@@ -82,12 +87,12 @@ interface Piece {
   label: string;
 }
 
-export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving, frame = 9, focus, onTapSquare, active, bounties = [] }: BoardProps) {
+export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving, frame = 9, focus, onTapSquare, active, bounties = [], smack }: BoardProps) {
   const id = useId();
   const glowId = `${id}glow`;
   const shadowId = `${id}shadow`;
   const shown = moving ? withoutMoving(men, moving) : men;
-  const box = focus ? zoomBox(focus.color, focus.spots, focus.tight ? 6 : 8.5, focus.tight ? 0.6 : 1.2) : { x: 0, y: 0, size: BOARD_PX };
+  const box = focus ? zoomBox(focus.color, focus.spots, focus.minUnits ?? (focus.tight ? 6 : 8.5), focus.tight ? 0.6 : 1.2) : { x: 0, y: 0, size: BOARD_PX };
   const zoom = BOARD_PX / box.size;
   // Zoomed in, men shrink a little so the color of the square they stand on shows around them.
   const pieces = layoutPieces(theme, seats, shown, movable, names, zoom > 1.15 ? 15 : SIZE.board);
@@ -150,6 +155,7 @@ export function Board({ theme, seats, men, movable, onTapMan, names = {}, moving
               .map((p) => (
                 <BountyMark key={`${p.key}bounty`} at={p.at} size={p.size} />
               ))}
+            {smack && <SmackLayer key={smack.id} smack={smack} />}
             {moving && <Hopper key={moving.id} moving={moving} men={men} fill={theme.players[moving.color]} filter={shadowId} />}
             {focus && onTapSquare && <SquareHits focus={focus} onTap={onTapSquare} />}
             {onTapMan &&

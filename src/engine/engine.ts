@@ -338,6 +338,7 @@ function emptyStats(): GameStats {
     kills: zero(),
     killed: zero(),
     killsBy: Object.fromEntries(COLORS.map((c) => [c, {}])) as GameStats['killsBy'],
+    lastKiller: {},
     sixes: zero(),
     dice: zero(),
   };
@@ -352,12 +353,21 @@ function countKills(stats: GameStats, events: GameEvent[]): GameStats {
   let out = stats;
   for (const e of events) {
     if (e.type !== 'kill') continue;
+    // The victim now owes the killer; if the killer was owed by the victim, that debt is paid.
+    const owed = { ...out.lastKiller, [e.victim]: e.color };
+    if (owed[e.color] === e.victim) delete owed[e.color];
     out = {
       ...out,
+      lastKiller: owed,
       kills: { ...out.kills, [e.color]: out.kills[e.color] + e.count },
       killed: { ...out.killed, [e.victim]: out.killed[e.victim] + e.count },
       killsBy: { ...out.killsBy, [e.color]: { ...out.killsBy[e.color], [e.victim]: (out.killsBy[e.color][e.victim] ?? 0) + e.count } },
     };
   }
   return out;
+}
+
+/** True if `killer` killing `victim` pays back the last time victim killed one of killer's men. */
+export function isRevenge(stats: GameStats, killer: Color, victim: Color): boolean {
+  return stats.lastKiller?.[killer] === victim;
 }

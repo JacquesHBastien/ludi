@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Board, type Focus, type Moving } from '../../board/Board';
+import type { Smack } from '../../board/Smack';
+import { centerOf, trackRects, yardSpot } from '../../board/layout';
+import { ricochet } from '../../board/ricochet';
 import { CapIcon } from '../../board/Cap';
-import { HEAVEN, YARD, applyAction, legalMoves, statsOf, trackIndexOf, type Color, type GameEvent, type GameState, type Move, type Progress } from '../../engine';
+import { HEAVEN, TRACK_LENGTH, YARD, applyAction, isRevenge, legalMoves, progressAt, statsOf, trackIndexOf, type Color, type GameEvent, type GameState, type Move, type Progress } from '../../engine';
 import { CAP, HIGHLIGHT, THEME_IDS, getTheme, type Theme, type ThemeId } from '../../theme/themes';
 import { copy } from '../copy';
 import { DiceTray, type DieView } from '../Dice';
@@ -41,6 +44,18 @@ interface GameProps {
 
 type View = 'handoff' | 'play' | 'turnOver';
 
+/** How long a smacked man pinballs before he lands in his yard. */
+const SMACK_MS = 1700;
+
+interface SmackShow {
+  smack: Smack;
+  hide: { color: Color; index: number }[];
+  actor: Color;
+  /** The attacker's progress on the kill square, for the gentle zoom. */
+  spot: Progress;
+  zoomed: boolean;
+}
+
 /** How long the dice spend flying over the board: a soft lob is quick, a hard shake flies longer. */
 const flightMs = (power: number) => Math.min(2400, Math.max(1000, 1000 + 850 * power));
 
@@ -67,7 +82,9 @@ export function Game(props: GameProps) {
   const [results, setResults] = useState(game.status === 'over');
   const [sheet, setSheet] = useState<'rules' | 'menu' | null>(null);
   /** A roll or move is animating; the engine result is applied when it lands. */
-  const [busy, setBusy] = useState<{ kind: 'roll'; flight: Flight | null } | { kind: 'move'; moving: Moving } | null>(null);
+  const [busy, setBusy] = useState<{ kind: 'roll'; flight: Flight | null } | { kind: 'move'; moving: Moving } | { kind: 'smack' } | null>(null);
+  /** A big kill in flight: the victims are hidden from the board and drawn bouncing home instead. */
+  const [smackShow, setSmackShow] = useState<SmackShow | null>(null);
   const trayRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -132,29 +149,74 @@ export function Game(props: GameProps) {
       if (bornSeen.has(m.color)) m = null;
       else setBornSeen(new Set([...bornSeen, m.color]));
     }
-    if (m?.kind === 'kill') {
+    let smackIt = false;
+    const kill = events.find((e) => e.type === 'kill');
+    if (m?.kind === 'kill' && kill?.type === 'kill') {
       // Was the man killed carrying a bounty? Check the position before the move.
-      const kill = events.find((e) => e.type === 'kill');
-      const bounty =
-        kill?.type === 'kill' && huntedIn(before).some((b) => b.color === kill.victim && trackIndexOf(b.color, b.from) === kill.trackIndex);
+      const bounty = huntedIn(before).some((b) => b.color === kill.victim && trackIndexOf(b.color, b.from) === kill.trackIndex);
+      const revenge = competitive && isRevenge(statsOf(before), kill.color, kill.victim);
       const taunt = competitive ? pickTaunt(patois, lastTaunt.current) : undefined;
       lastTaunt.current = taunt ?? lastTaunt.current;
-      m = { ...m, bounty, taunt };
+      m = { ...m, bounty, revenge, taunt };
+      // The big kills get the smack: bounty, revenge, or a whole block sent home.
+      smackIt = competitive && !reducedMotion() && (bounty || revenge || kill.count >= 2);
     }
-    setMoment(m);
 
-    const firstWinner = before.placements.length === 0 && after.placements.length > 0;
-    if (after.status === 'over' || firstWinner) setResults(true);
-    if (after.status === 'playing' && after.turn.color !== before.turn.color) {
-      const actor = before.turn.color;
-      const nextUp = after.turn.color;
-      const holder = levelOf(actor) ? lastPerson : actor;
-      if (!levelOf(actor)) setLastPerson(actor);
-      setDoneBy(actor);
-      // Hand the phone over only when the next player is a different person.
-      setView(!levelOf(nextUp) && people.length > 1 && nextUp !== holder ? 'turnOver' : 'play');
+    // Everything else waits until a smacked man has landed in his yard.
+    const finish = (moment: Moment | null) => {
+      setMoment(moment);
+      const firstWinner = before.placements.length === 0 && after.placements.length > 0;
+      if (after.status === 'over' || firstWinner) setResults(true);
+      if (after.status === 'playing' && after.turn.color !== before.turn.color) {
+        const actor = before.turn.color;
+        const nextUp = after.turn.color;
+        const holder = levelOf(actor) ? lastPerson : actor;
+        if (!levelOf(actor)) setLastPerson(actor);
+        setDoneBy(actor);
+        // Hand the phone over only when the next player is a different person.
+        setView(!levelOf(nextUp) && people.length > 1 && nextUp !== holder ? 'turnOver' : 'play');
+      }
+    };
+    if (smackIt && kill?.type === 'kill') {
+      const show = smackFor(before, after, kill);
+      setSmackShow(show);
+      setBusy({ kind: 'smack' });
+      timer.current = setTimeout(() => setSmackShow((cur) => (cur ? { ...cur, zoomed: false } : cur)), 380);
+      setTimeout(() => {
+        setSmackShow(null);
+        setBusy(null);
+        finish(m);
+      }, SMACK_MS + 250);
+      return;
     }
+    finish(m);
   }
+
+  /** Build the smack: where it happened, which men fly, and their bouncing paths home. */
+  function smackFor(before: GameState, after: GameState, kill: Extract<GameEvent, { type: 'kill' }>): SmackShow {
+    const victim = kill.victim;
+    const idx = kill.trackIndex;
+    const at = centerOf(trackRects[idx]!);
+    const prev = centerOf(trackRects[(idx + TRACK_LENGTH - 1) % TRACK_LENGTH]!);
+    const heading = Math.atan2(at.y - prev.y, at.x - prev.x);
+    const flying = before.men[victim].flatMap((p, i) => (trackIndexOf(victim, p) === idx && after.men[victim][i] === YARD ? [i] : []));
+    const shots = flying.map((i, n) => {
+      const angle = heading + (Math.random() - 0.5) * 1.1 + n * 0.6;
+      return {
+        color: victim,
+        fill: theme.players[victim],
+        legs: ricochet(at, { x: Math.cos(angle), y: Math.sin(angle) }, 4, yardSpot(victim, i), 0.85),
+      };
+    });
+    return {
+      smack: { id: Date.now(), at, shots, duration: SMACK_MS, onBounce: () => sfx.clack(), onLand: () => sfx.thud(0.8) },
+      hide: flying.map((i) => ({ color: victim, index: i })),
+      actor: kill.color,
+      spot: progressAt(kill.color, idx),
+      zoomed: true,
+    };
+  }
+
 
   // Computers roll, pick a die (so you can see it), and move, at a pace you can follow.
   const botLevel = levelOf(turn.color);
@@ -321,12 +383,20 @@ export function Game(props: GameProps) {
         <Board
           theme={theme}
           seats={game.seats}
-          men={game.men}
+          men={smackShow ? hideMen(game.men, smackShow.hide) : game.men}
+          smack={smackShow?.smack}
           movable={{ color: turn.color, froms: movable }}
           onTapMan={playing ? tapMan : undefined}
           names={Object.fromEntries(game.players.map((p) => [p.color, p.name]))}
           moving={busy?.kind === 'move' ? busy.moving : undefined}
-          focus={focus}
+          focus={
+            smackShow?.zoomed
+              ? // A gentle push-in on the kill square for the hit, then back out as he flies.
+                { color: smackShow.actor, spots: [smackShow.spot], here: [], there: [], minUnits: 16 / 1.4 }
+              : smackShow
+                ? undefined
+                : focus
+          }
           onTapSquare={playing ? tapSquare : undefined}
           active={view === 'play' ? turn.color : undefined}
           bounties={huntedIn(game)}
@@ -798,4 +868,11 @@ function TestDice({ count, onRoll }: { count: number; onRoll: (dice: number[]) =
       ))}
     </div>
   );
+}
+
+/** The board's men with the smacked ones hidden while they fly. */
+function hideMen(men: GameState['men'], hide: { color: Color; index: number }[]): GameState['men'] {
+  const out = { ...men };
+  for (const h of hide) out[h.color] = out[h.color].map((p, i) => (i === h.index ? NaN : p));
+  return out;
 }

@@ -93,6 +93,11 @@ export interface GameStats {
   killed: Record<Color, number>;
   /** killsBy[killer][victim]: men the killer has sent home, per victim. */
   killsBy: Record<Color, Partial<Record<Color, number>>>;
+  /**
+   * lastKiller[victim]: the color that most recently killed one of victim's men, until the victim
+   * pays them back. Killing your lastKiller is a revenge kill. Missing in games saved before it existed.
+   */
+  lastKiller?: Partial<Record<Color, Color>>;
   /** Dice that came up 6, and dice rolled, per color. */
   sixes: Record<Color, number>;
   dice: Record<Color, number>;

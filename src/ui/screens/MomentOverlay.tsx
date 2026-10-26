@@ -44,10 +44,12 @@ export function MomentOverlay({ theme, game, rules, moment, patois, onDone }: Mo
       const victim = seatInfo(theme, moment.victim, game);
       accent = theme.players.red;
       caps = [cap(moment.victim, 18, 30, 64, { transform: 'rotate(-24deg)', opacity: 0.85 }), cap(moment.color, 92, 6, 92)];
-      shout = moment.bounty ? t.bountyShout : t.killShout;
+      shout = moment.bounty ? t.bountyShout : moment.revenge ? t.revengeShout : t.killShout;
       line = moment.bounty
         ? t.bountyLine(victim.name)
-        : moment.count > 1
+        : moment.revenge
+          ? t.revengeLine(victim.name)
+          : moment.count > 1
           ? `${me.name} killed ${victim.name}'s block.`
           : `${me.name} killed ${victim.name}'s man.`;
       taunt = moment.taunt;

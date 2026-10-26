@@ -21,6 +21,8 @@ export function copy(patois: boolean) {
     winShout: 'Run yard!',
     ready: patois ? 'Mi ready' : "I'm ready",
     bountyShout: patois ? 'Bounty!' : 'Bounty!',
+    revengeShout: patois ? 'Revenge!' : 'Revenge!',
+    revengeLine: (who: string) => (patois ? `Yuh pay back ${who}!` : `You paid ${who} back!`),
     bountyLine: (who: string) =>
       patois ? `${who} man did nearly reach home. Not again!` : `${who}'s man was nearly home. Not anymore!`,
     bountyHunt: (who: string) =>
