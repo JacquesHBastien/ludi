@@ -50,6 +50,30 @@ export const Icons = {
     </>,
     true,
   ),
+  /** The iPhone Share icon: a box with an arrow pointing up. */
+  share: icon(
+    <>
+      <path d="M12 3v12M8 7l4-4 4 4" />
+      <path d="M8 10H6a1 1 0 0 0-1 1v9a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1h-2" />
+    </>,
+    true,
+  ),
+  /** "Add to Home Screen": a rounded square with a plus. */
+  addSquare: icon(
+    <>
+      <rect x="4" y="4" width="16" height="16" rx="4" />
+      <path d="M12 8v8M8 12h8" />
+    </>,
+    true,
+  ),
+  /** Android Chrome's menu: three dots. */
+  dots: (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <circle cx="12" cy="5" r="2" />
+      <circle cx="12" cy="12" r="2" />
+      <circle cx="12" cy="19" r="2" />
+    </svg>
+  ),
   zoomIn: icon(
     <>
       <circle cx="10.5" cy="10.5" r="6.5" />

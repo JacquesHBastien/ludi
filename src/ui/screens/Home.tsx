@@ -5,6 +5,8 @@ import { PrimaryButton, Screen, SecondaryButton } from '../kit';
 import { Icons } from '../icons';
 import { DARK_INK, ROOTS, display } from '../style';
 import { RulesSheet } from './RulesSheet';
+import { InstallSheet } from './InstallSheet';
+import { dismissHint, hintDismissed, useInstall } from '../install';
 
 interface HomeProps {
   /** A saved game is waiting: offer to keep playing it. */
@@ -16,6 +18,15 @@ interface HomeProps {
 
 export function Home({ canContinue, onContinue, onNewGame, onVsComputer }: HomeProps) {
   const [rules, setRules] = useState(false);
+  const [howToInstall, setHowToInstall] = useState(false);
+  const [hidden, setHidden] = useState(hintDismissed);
+  const install = useInstall();
+  // Offer it on phones (or wherever the browser can install), until Ludi is opened from the Home Screen.
+  const offer = !install.installed && (install.platform !== 'other' || install.canPrompt);
+  const startInstall = async () => {
+    if (install.canPrompt) await install.prompt();
+    else setHowToInstall(true);
+  };
 
   return (
     <Screen padding="72px 24px 36px" gap={40}>
@@ -25,6 +36,51 @@ export function Home({ canContinue, onContinue, onNewGame, onVsComputer }: HomeP
           <h1 style={{ ...display(84, { lineHeight: 0.9 }), margin: 0, fontWeight: 400 }}>Ludi</h1>
           <div style={{ fontSize: 17, fontWeight: 700, opacity: 0.9 }}>The yard game, for the whole family</div>
         </div>
+        {offer && !hidden && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              onClick={startInstall}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                minHeight: 44,
+                padding: '0 16px',
+                borderRadius: 999,
+                border: `2px solid ${ROOTS.callout}`,
+                background: 'rgba(0,0,0,0.3)',
+                color: ROOTS.ink,
+                fontSize: 15,
+                fontWeight: 900,
+                cursor: 'pointer',
+              }}
+            >
+              {install.platform === 'android' || install.canPrompt ? Icons.addSquare : Icons.share}
+              Add Ludi to your Home Screen
+            </button>
+            <button
+              aria-label="Not now"
+              onClick={() => {
+                dismissHint();
+                setHidden(true);
+              }}
+              style={{
+                width: 44,
+                height: 44,
+                border: 'none',
+                background: 'none',
+                color: ROOTS.ink,
+                opacity: 0.6,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {Icons.close}
+            </button>
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 'auto' }}>
@@ -74,8 +130,29 @@ export function Home({ canContinue, onContinue, onNewGame, onVsComputer }: HomeP
         >
           How to play
         </button>
+        {offer && hidden && (
+          <button
+            onClick={startInstall}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: ROOTS.ink,
+              opacity: 0.75,
+              textDecoration: 'underline',
+              fontSize: 14,
+              fontWeight: 800,
+              padding: 8,
+              minHeight: 44,
+              marginTop: -12,
+              cursor: 'pointer',
+            }}
+          >
+            Add to Home Screen
+          </button>
+        )}
       </div>
       {rules && <RulesSheet theme={ROOTS} rules={DEFAULT_RULES} onClose={() => setRules(false)} />}
+      {howToInstall && <InstallSheet platform={install.platform} onClose={() => setHowToInstall(false)} />}
     </Screen>
   );
 }
