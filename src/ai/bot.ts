@@ -25,13 +25,25 @@ function worth(p: Progress): number {
   return 8 + p;
 }
 
-/** Chance an opponent `d` squares behind can land on you next turn. */
-function hitChance(d: number, twoDice: boolean): number {
+/** Ways (out of 36) two dice add up to d. */
+const sumWays = (d: number) => (d < 2 || d > 12 ? 0 : d <= 7 ? d - 1 : 13 - d);
+
+/**
+ * Chance an opponent's man `d` squares behind can land on you next turn.
+ * `lone`: he is that player's only man out. Then a single die can't kill you on most rolls,
+ * because a killer must stop and the other die would have nowhere to go: he has to move the
+ * whole count. He only hits on the sum, or with a 6 he can spend borning a man (`canBorn`).
+ */
+export function hitChance(d: number, twoDice: boolean, lone = false, canBorn = false): number {
   if (d < 1) return 0;
   if (!twoDice) return d <= 6 ? 1 / 6 : 0;
-  // Either die showing d (11 ways for d <= 6), or the two dice adding to d.
-  const sums = d <= 7 ? d - 1 : 13 - d;
-  return ((d <= 6 ? 11 : 0) + Math.max(0, sums)) / 36;
+  if (!lone) return ((d <= 6 ? 11 : 0) + sumWays(d)) / 36;
+  let ways = sumWays(d);
+  if (canBorn) {
+    if (d <= 5) ways += 2; // 6 + d: born with the 6, kill with the d
+    if (d === 6) ways += 1; // double 6: kill with one, born with the other
+  }
+  return ways / 36;
 }
 
 interface Weights {
@@ -78,9 +90,11 @@ export function evaluate(state: GameState, me: Color, w: Weights): number {
     for (const o of others) {
       const theirP = progressAt(o, idx);
       if (theirP > LAST_TRACK) continue; // the square behind their start is never on their lap
+      const out = state.men[o].filter((q) => q !== YARD && q !== HEAVEN).length;
+      const canBorn = state.men[o].includes(YARD);
       for (const q of state.men[o]) {
         if (q === YARD && theirP === 0) risk += twoDice ? 11 / 36 : 1 / 6;
-        else if (q !== YARD && q <= LAST_TRACK) risk += hitChance(theirP - q, twoDice);
+        else if (q !== YARD && q <= LAST_TRACK) risk += hitChance(theirP - q, twoDice, out === 1, canBorn);
       }
     }
     score -= w.danger * Math.min(risk, 1) * (worth(p) + 10);

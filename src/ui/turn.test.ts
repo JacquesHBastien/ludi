@@ -42,6 +42,15 @@ describe('turn helpers', () => {
     expect(planTap(blocked, 10, [3, 2])).toBeNull();
   });
 
+  it('both dice on one man never kills on the first hop and carries on', () => {
+    // 3 first would kill gold on 13 and leave him stuck, so the tap plays 5 then 3 instead.
+    const s = roll(scenario({ men: { red: [10, 20], gold: [at('gold', 13)] } }), 3, 5);
+    expect(planTap(s, 10, [3, 5])).toEqual([single(10, 5), single(15, 3)]);
+    // With the 5 blocked, there's no way to use both on that man.
+    const t = roll(scenario({ men: { red: [10, 20], gold: [at('gold', 13), at('gold', 15), at('gold', 15)] } }), 3, 5);
+    expect(planTap(t, 10, [3, 5])).toBeNull();
+  });
+
   it('only offers dice that can move something', () => {
     const s = roll(scenario({ men: { red: [H - 3] } }), 3, 5);
     expect(usableDice(s)).toEqual([0]); // the 5 overshoots heaven

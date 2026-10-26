@@ -4,7 +4,11 @@ import { DEFAULT_THEME, THEME_IDS, type ThemeId } from '../theme/themes';
 export const PREFS_KEY = 'ludi.prefs.v1';
 
 export interface Prefs {
+  /** Bumped when a default changes for everyone (2: Heaven-less on by default). */
+  version?: number;
   patois: boolean;
+  /** Kill tally, taunts, bounties, rivalry lines and awards. */
+  competitive: boolean;
   muted: boolean;
   /** Keep the board zoomed in on the current player's men for the whole turn. */
   closeUp: boolean;
@@ -15,12 +19,17 @@ export interface Prefs {
   names: Partial<Record<Color, string>>;
 }
 
+const PREFS_VERSION = 2;
+
 export const DEFAULT_PREFS: Prefs = {
+  version: PREFS_VERSION,
   patois: true,
+  competitive: true,
   muted: false,
   closeUp: false,
   themeId: DEFAULT_THEME,
-  rules: DEFAULT_RULES,
+  // Heaven-less starts switched on in setup; the engine's own default stays off.
+  rules: { ...DEFAULT_RULES, heavenless: true },
   names: {},
 };
 
@@ -29,7 +38,10 @@ export function loadPrefs(): Prefs {
     const raw = localStorage.getItem(PREFS_KEY);
     if (!raw) return DEFAULT_PREFS;
     const saved = JSON.parse(raw) as Partial<Prefs>;
-    const prefs = { ...DEFAULT_PREFS, ...saved, rules: { ...DEFAULT_RULES, ...saved.rules } };
+    const rules = { ...DEFAULT_PREFS.rules, ...saved.rules };
+    // Phones that saved prefs before Heaven-less became the default get it switched on once.
+    if ((saved.version ?? 1) < 2) rules.heavenless = true;
+    const prefs = { ...DEFAULT_PREFS, ...saved, rules, version: PREFS_VERSION };
     return THEME_IDS.includes(prefs.themeId) ? prefs : { ...prefs, themeId: DEFAULT_THEME };
   } catch {
     return DEFAULT_PREFS;

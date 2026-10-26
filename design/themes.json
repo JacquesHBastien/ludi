@@ -1,5 +1,5 @@
 {
- "_about": "Board themes. Player slots are always red, gold, green, black (the internal ids); each theme repaints them. Track squares use cycle[index % 6]. Home lane bars use cycle colors too; the bar touching heaven uses 'bar'. 'saltire' is the X across heaven. 'heavenTriangles' optionally repaints a heaven triangle so it never matches the saltire; otherwise triangles use 'players'.",
+ "_about": "Board themes. Player slots are always red, gold, green, black (the internal ids); each theme repaints them. Track squares use cycle[index % 6]. Home lane bars use cycle colors too; the bar touching heaven uses 'bar'. 'saltire' is the X across heaven. 'badge' labels a special board in the setup picker only (never on the board during play). 'heavenTriangles' optionally repaints a heaven triangle so it never matches the saltire; otherwise triangles use 'players'.",
  "playerSlots": {
   "red": {
    "shape": "diamond",
@@ -21,7 +21,7 @@
  "themes": {
   "roots": {
    "name": "Roots",
-   "exclusive": false,
+   "badge": null,
    "default": true,
    "table": "#3A2416",
    "frame": "#17110D",
@@ -68,7 +68,7 @@
   },
   "yardClassic": {
    "name": "Yard Classic",
-   "exclusive": false,
+   "badge": null,
    "table": "#4A3322",
    "frame": "#1D1A17",
    "line": "#15130F",
@@ -114,7 +114,7 @@
   },
   "stCroix": {
    "name": "St. Croix Edition",
-   "exclusive": true,
+   "badge": null,
    "table": "#5B4330",
    "frame": "#0F2A3F",
    "line": "#0B1E2D",
@@ -157,7 +157,7 @@
   },
   "haiti": {
    "name": "Haitian Edition",
-   "exclusive": true,
+   "badge": null,
    "table": "#3A2416",
    "frame": "#0D0D0D",
    "line": "#0A0A0A",
@@ -196,6 +196,49 @@
    "center": [
     "Ayiti",
     "1804"
+   ]
+  },
+  "paulette": {
+   "name": "Paulette's Board",
+   "badge": "Special Edition",
+   "table": "#2E1C14",
+   "frame": "#0F0B0A",
+   "line": "#0B0807",
+   "ink": "#F3E6D3",
+   "trim": "#A08262",
+   "callout": "#7FD8CF",
+   "cream": "#EFE3CC",
+   "saltire": "#7FD8CF",
+   "bar": "#C4A27E",
+   "cycle": [
+    "#7B1E30",
+    "#D9C3A0",
+    "#5FC4B8",
+    "#151110",
+    "#8A5A3B",
+    "#EFE3CC"
+   ],
+   "players": {
+    "red": "#8C1F35",
+    "gold": "#D4B48C",
+    "green": "#2E9E95",
+    "black": "#1A1412"
+   },
+   "colorNames": [
+    "Burgundy",
+    "Beige",
+    "Aquamarine",
+    "Black"
+   ],
+   "yards": [
+    "St. Elizabeth",
+    "St. Andrew",
+    "St. Mary",
+    "St. Ann"
+   ],
+   "center": [
+    "One",
+    "Love"
    ]
   }
  },

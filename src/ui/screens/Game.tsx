@@ -31,6 +31,9 @@ interface GameProps {
   onChange: (game: GameState) => void;
   onTogglePatois: () => void;
   onToggleSound: () => void;
+  /** Kill tally, taunts, bounties, rivalry lines and awards. */
+  competitive: boolean;
+  onToggleCompetitive: () => void;
   onChangeTheme: (id: ThemeId) => void;
   onHome: () => void;
   onPlayAgain: () => void;
@@ -45,6 +48,9 @@ const reducedMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(pr
 
 export function Game(props: GameProps) {
   const { game, theme, patois, muted, closeUp, onToggleCloseUp, testDice, onChange, onTogglePatois, onToggleSound, onChangeTheme, onHome, onPlayAgain } = props;
+  const { competitive, onToggleCompetitive } = props;
+  /** Bounties only exist in competitive games. */
+  const huntedIn = (s: GameState) => (competitive ? bounties(s) : []);
   const levelOf = (c: Color) => game.players.find((p) => p.color === c)?.computer;
   const people = game.players.filter((p) => !p.computer);
   // Pass-the-phone only matters with two or more people; computers never get the handoff screen.
@@ -130,9 +136,9 @@ export function Game(props: GameProps) {
       // Was the man killed carrying a bounty? Check the position before the move.
       const kill = events.find((e) => e.type === 'kill');
       const bounty =
-        kill?.type === 'kill' && bounties(before).some((b) => b.color === kill.victim && trackIndexOf(b.color, b.from) === kill.trackIndex);
-      const taunt = pickTaunt(patois, lastTaunt.current);
-      lastTaunt.current = taunt;
+        kill?.type === 'kill' && huntedIn(before).some((b) => b.color === kill.victim && trackIndexOf(b.color, b.from) === kill.trackIndex);
+      const taunt = competitive ? pickTaunt(patois, lastTaunt.current) : undefined;
+      lastTaunt.current = taunt ?? lastTaunt.current;
       m = { ...m, bounty, taunt };
     }
     setMoment(m);
@@ -182,6 +188,7 @@ export function Game(props: GameProps) {
 
   /** A line to fire someone up at the start of their turn: their bounty, a grudge, or a bounty to chase. */
   function turnNote(color: Color): string | null {
+    if (!competitive) return null;
     const name = (c: Color) => seatInfo(theme, c, game).name;
     const hunted = bounties(game);
     if (hunted.some((b) => b.color === color)) return t.bountyMine;
@@ -200,6 +207,7 @@ export function Game(props: GameProps) {
         theme={theme}
         game={game}
         patois={patois}
+        competitive={competitive}
         onPlayAgain={onPlayAgain}
         onHome={onHome}
         onKeepPlaying={canContinue ? () => setResults(false) : undefined}
@@ -307,7 +315,7 @@ export function Game(props: GameProps) {
         </IconButton>
       </header>
 
-      <PlayerStrip theme={theme} game={game} active={active} />
+      <PlayerStrip theme={theme} game={game} active={active} showKills={competitive} />
 
       <div ref={boardRef} style={{ width: '100%', alignSelf: 'center', position: 'relative' }}>
         <Board
@@ -321,7 +329,7 @@ export function Game(props: GameProps) {
           focus={focus}
           onTapSquare={playing ? tapSquare : undefined}
           active={view === 'play' ? turn.color : undefined}
-          bounties={bounties(game)}
+          bounties={huntedIn(game)}
         />
         <button
           onClick={onToggleCloseUp}
@@ -410,7 +418,7 @@ export function Game(props: GameProps) {
           ) : (
             <MoveHint
               bounty={(() => {
-                const k = bountyKills(game, legal)[0];
+                const k = competitive ? bountyKills(game, legal)[0] : undefined;
                 if (!k) return null;
                 const victim = bounties(game).find((b) => b.color !== turn.color && trackIndexOf(b.color, b.from) === trackIndexOf(turn.color, landing([k])));
                 return victim ? t.bountyHunt(seatInfo(theme, victim.color, game).name) : null;
@@ -447,8 +455,10 @@ export function Game(props: GameProps) {
           onChangeTheme={onChangeTheme}
           patois={patois}
           muted={muted}
+          competitive={competitive}
           onTogglePatois={onTogglePatois}
           onToggleSound={onToggleSound}
+          onToggleCompetitive={onToggleCompetitive}
           onHome={onHome}
           onClose={() => setSheet(null)}
         />
@@ -457,7 +467,7 @@ export function Game(props: GameProps) {
   );
 }
 
-function PlayerStrip({ theme, game, active }: { theme: Theme; game: GameState; active: Color }) {
+function PlayerStrip({ theme, game, active, showKills }: { theme: Theme; game: GameState; active: Color; showKills: boolean }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: `repeat(${game.seats.length}, minmax(0, 1fr))`, gap: 6 }}>
       {game.seats.map((c) => {
@@ -500,7 +510,7 @@ function PlayerStrip({ theme, game, active }: { theme: Theme; game: GameState; a
               {s.name}
             </div>
             <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.9 }}>{s.home}/4 home</div>
-            {statsOf(game).kills[c] > 0 && (
+            {showKills && statsOf(game).kills[c] > 0 && (
               <span
                 aria-label={`${statsOf(game).kills[c]} kills`}
                 style={{
@@ -627,8 +637,10 @@ function Menu({
   onChangeTheme,
   patois,
   muted,
+  competitive,
   onTogglePatois,
   onToggleSound,
+  onToggleCompetitive,
   onHome,
   onClose,
 }: {
@@ -636,8 +648,10 @@ function Menu({
   onChangeTheme: (id: ThemeId) => void;
   patois: boolean;
   muted: boolean;
+  competitive: boolean;
   onTogglePatois: () => void;
   onToggleSound: () => void;
+  onToggleCompetitive: () => void;
   onHome: () => void;
   onClose: () => void;
 }) {
@@ -708,6 +722,10 @@ function Menu({
         <button onClick={onTogglePatois} style={menuItem(theme)} aria-pressed={patois}>
           <span>Patois</span>
           <span style={{ color: theme.callout }}>{patois ? 'On' : 'Off'}</span>
+        </button>
+        <button onClick={onToggleCompetitive} style={menuItem(theme)} aria-pressed={competitive}>
+          <span>Competitive</span>
+          <span style={{ color: theme.callout }}>{competitive ? 'On' : 'Off'}</span>
         </button>
         <button onClick={onHome} style={menuItem(theme)}>
           <span>Back to start</span>

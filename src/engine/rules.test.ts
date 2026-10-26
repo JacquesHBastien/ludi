@@ -256,8 +256,8 @@ describe('Killing', () => {
     const one = play(roll(scenario({ rules: ONE, men: { red: [10], gold: [at('gold', 13)] } }), 3), single(10, 3));
     expect(one.turn).toMatchObject({ color: 'gold', phase: 'roll' });
 
-    let two = roll(scenario({ rules: TWO, men: { red: [10], gold: [at('gold', 13)] } }), 3, 1);
-    two = play(play(two, single(10, 3)), single(13, 1));
+    let two = roll(scenario({ rules: TWO, men: { red: [10, 20], gold: [at('gold', 13)] } }), 3, 1);
+    two = play(play(two, single(10, 3)), single(20, 1));
     expect(two.men.gold).toEqual([YARD, YARD, YARD, YARD]);
     expect(two.turn.color).toBe('gold');
   });
@@ -293,13 +293,19 @@ describe('Blocks', () => {
   });
 
   it('22. double 4: or one man of the block moves 8 and the rest stay', () => {
-    // From the mockup: landing 4 ahead on the way kills the man there.
-    let s = roll(scenario({ rules: TWO, men: { red: [10, 10], gold: [at('gold', 14)] } }), 4, 4);
+    let s = roll(scenario({ rules: TWO, men: { red: [10, 10] } }), 4, 4);
     expect(moves(s)).toEqual([pair(10, 4), single(10, 4)]);
+    s = play(play(s, single(10, 4)), single(14, 4));
+    expect(sorted(s.men.red)).toEqual([YARD, YARD, 10, 18]);
+  });
+
+  it('22c. but if he kills 4 ahead, he stops there; the other 4 must move another man', () => {
+    let s = roll(scenario({ rules: TWO, men: { red: [10, 10], gold: [at('gold', 14)] } }), 4, 4);
     s = play(s, single(10, 4));
     expect(s.men.gold).toEqual([YARD, YARD, YARD, YARD]);
-    s = play(s, single(14, 4));
-    expect(sorted(s.men.red)).toEqual([YARD, YARD, 10, 18]);
+    expect(moves(s)).toEqual([single(10, 4)]); // not the killer on 14
+    s = play(s, single(10, 4));
+    expect(sorted(s.men.red)).toEqual([YARD, YARD, 14, 14]);
   });
 
   it('22b. a block of three: a double moves two of them, the third stays', () => {
@@ -335,6 +341,50 @@ describe('Blocks', () => {
   it('a block cannot pass another block, even moving together', () => {
     const s = roll(scenario({ rules: TWO, men: { red: [10, 10], gold: [at('gold', 12), at('gold', 12)] } }), 4, 4);
     expect(s.events).toContainEqual({ type: 'noMoves', color: 'red' });
+  });
+});
+
+describe('A man who kills stays put', () => {
+  it('cannot take the other die after a kill; another man must use it', () => {
+    let s = roll(scenario({ rules: TWO, men: { red: [10, 20], gold: [at('gold', 13)] } }), 3, 2);
+    s = play(s, single(10, 3));
+    expect(moves(s)).toEqual([single(20, 2)]);
+  });
+
+  it("with no other man to take the other die, he can't kill: he must move the whole count", () => {
+    // One man out, an opponent 2 ahead, roll 2 + 5: killing with the 2 would strand the 5,
+    // so he has to move the full 7 (5 then 2), jumping past.
+    let s = roll(scenario({ rules: TWO, men: { red: [10], gold: [at('gold', 12)] } }), 2, 5);
+    expect(moves(s)).toEqual([single(10, 5)]);
+    s = play(play(s, single(10, 5)), single(15, 2));
+    expect(s.men.red).toContain(17);
+    expect(s.men.gold).toContain(at('gold', 12)); // still alive
+  });
+
+  it('only if the whole count is impossible too does he kill with one die (rare)', () => {
+    // Gold man on 13, gold block on 15: 2 then 3 lands on the block, so the 3 kills and the 2 is wasted.
+    let s = roll(
+      scenario({ rules: TWO, men: { red: [10], gold: [at('gold', 13), at('gold', 15), at('gold', 15)] } }),
+      3,
+      2,
+    );
+    expect(moves(s)).toEqual([single(10, 3)]);
+    s = play(s, single(10, 3));
+    expect(s.men.gold.filter((p) => p === YARD)).toHaveLength(2); // the killed man is back in the yard
+    expect(s.turn.color).toBe('gold'); // the 2 is lost and the turn passes
+  });
+
+  it('a kill that would waste a die is not allowed when both dice can be used another way', () => {
+    // 3 kills but strands the 1; 1 then 3 jumps the single gold man and uses both.
+    const s = roll(scenario({ rules: TWO, men: { red: [10], gold: [at('gold', 13)] } }), 3, 1);
+    expect(moves(s)).toEqual([single(10, 1)]);
+  });
+
+  it('the killer moves again on the next roll (a 6 still gives one)', () => {
+    let s = play(roll(scenario({ rules: ONE, men: { red: [10], gold: [at('gold', 16)] } }), 6), single(10, 6));
+    expect(s.turn).toMatchObject({ color: 'red', phase: 'roll' });
+    s = roll(s, 2);
+    expect(moves(s)).toContainEqual(single(16, 2));
   });
 });
 

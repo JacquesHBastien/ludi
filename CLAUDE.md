@@ -30,7 +30,7 @@ A family web app for playing **Jamaican Ludi**: pass one phone around (v1), or j
 - Phone first, portrait, 390px wide reference. Tap targets at least 44px.
 - Fonts: Caveat Brush (display, yard names, shouts), Nunito (UI).
 - Men are bottle caps; every player also has a shape (diamond, triangle, circle, square) so color is never the only signal.
-- The "Exclusive" badge shows **only in the setup board picker**, never on the board during play.
+- A board's edition badge (`badge` in themes.json, e.g. "Special Edition" on Paulette's Board) shows **only in the setup board picker**, never on the board during play. St. Croix and Haitian are regular boards since 2026-10-26.
 - Only legal pieces are highlighted (gold glow). Blocks show a "2" (or "3") badge.
 
 ## About the mockups
@@ -45,7 +45,8 @@ The `.dc.html` files are Claude Design canvas files. They are **visual reference
 - Nothing passes another color's block, not even a block moving together on a double. A moving block may only land exactly on it (and kill it).
 - A block of 3 on a double: two men move together, the third stays.
 - Two dice, only one usable: it must be the bigger die if the bigger die can move.
-- Both dice on one man is two hops: he can kill on the first landing square (from the Main mockup hint).
+- Both dice on one man is two hops. But a man who kills stops there for the rest of that roll (confirmed 2026-10-26, replacing the mockup's "move 8, kill 4 ahead"): the other die must move a different man or be born. If no other man can use it, he can't make that kill: he has to move the whole count (e.g. one man out, opponent 2 ahead, roll 2 + 5: he must move 7). Only if the whole count is impossible too (rare, e.g. it would land on a block) does the one-usable-die rule apply. He moves again on the next roll.
+- Hard computers know this: a lone man can only hit on the sum of the dice (or with a 6 spent borning), so standing just in front of a player's only man is a fair risk, while they stay behind players with several men out.
 - Every player has exactly one color. Two-player games sit diagonally (red/green or gold/black); the other two yards stay empty. There is no "each player controls two colors" option, despite SPEC section 2.
 
 ## Engine assumptions (not yet confirmed by Jacques)
@@ -63,6 +64,10 @@ The `.dc.html` files are Claude Design canvas files. They are **visual reference
   - End-of-game awards (most kills, never killed, most sent home, most sixes).
   - Family leaderboard kept on the phone.
   - Rivalry lines on the handoff screen ("Marlon has killed you 3 times tonight").
+
+## Game options (decided 2026-10-26)
+- Setup has a Game style section: Patois (on by default) and Competitive (on by default). Competitive off hides the kill tally, taunts, bounties, rivalry lines and awards; the engine still keeps the stats. Both can also be switched from the in-game menu.
+- Heaven-less is switched on by default in setup (players can turn it off). The engine's own default stays off.
 
 ## Open questions (ask Jacques, don't guess)
 - One-die mode: a block parked on someone's start square could stall them for a long time. Watch in playtesting; a turn limit may be added.

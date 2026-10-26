@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyAction, createGame, type BotLevel, type Color, type GameState } from '../engine';
 import { at, roll, scenario, single } from '../engine/testkit';
-import { chooseMove } from './bot';
+import { chooseMove, hitChance } from './bot';
 import { BOT_NAMES, botName } from './names';
 
 /** Small seeded random so the simulated games are repeatable. */
@@ -50,6 +50,16 @@ describe('computer players', () => {
     const s = roll(scenario({ rules: { diceMode: 'one' }, men: { red: [10, 30], gold: [at('gold', 13)] } }), 3);
     expect(chooseMove(s, 'medium')).toEqual(single(10, 3));
     expect(chooseMove(s, 'hard')).toEqual(single(10, 3));
+  });
+
+  it('knows a lone man must move the whole count, so standing in front of him is safer', () => {
+    // 2 ahead of a player with several men out: either die showing 2, or 1 + 1.
+    expect(hitChance(2, true)).toBeCloseTo(12 / 36);
+    // 2 ahead of a lone man: only 1 + 1, or 6 + 2 (born with the 6, kill with the 2).
+    expect(hitChance(2, true, true, true)).toBeCloseTo(3 / 36);
+    // ...and with nobody left in his yard to born, only the sum.
+    expect(hitChance(2, true, true, false)).toBeCloseTo(1 / 36);
+    expect(hitChance(7, true, true, true)).toBeCloseTo(6 / 36);
   });
 
   it('hard beats easy most of the time', () => {

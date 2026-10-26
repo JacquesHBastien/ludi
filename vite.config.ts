@@ -7,8 +7,8 @@ export default defineConfig({
   base: process.env.BASE_PATH ?? '/',
   plugins: [react()],
   build: {
-    // The game, plus the dice lab test page at /dice/.
-    rollupOptions: { input: { main: 'index.html', dice: 'dice/index.html' } },
+    // The game, plus the dice lab (/dice/) and kill lab (/smack/) test pages.
+    rollupOptions: { input: { main: 'index.html', dice: 'dice/index.html', smack: 'smack/index.html' } },
   },
   test: {
     include: ['src/**/*.test.ts'],

@@ -37,6 +37,12 @@ Positions use track indexes from `design/board-geometry.json` (0 to 47, clockwis
 24. Only a block can kill a block: my block landing exactly on an opponent block kills all of its pawns.
 25. My block landing on a single opponent pawn kills it.
 
+## A man who kills stays put
+25a. Two dice, 3 + 6, an opponent 3 ahead: the man who kills with the 3 stays on that square; the 6 must move another man (or born one). If no other man can use it, he can't make the kill and must move the whole 9.
+25b. Double 4 with a block, an opponent 4 ahead: one man kills 4 ahead and stops; the other 4 moves the other man up to him.
+25c. One man out, an opponent 2 ahead, roll 2 + 5: no kill; he must move the whole 7.
+25d. Only when the whole count is impossible too (e.g. it lands on a block) does he kill with one die and lose the other.
+
 ## Last square before home
 26a. A man sitting on his own long crossing bar (his lastTrackIndex) can be killed by any opponent who lands there. It is the last square before he turns into his home lane.
 26b. A man that has moved into his home lane can no longer be killed.

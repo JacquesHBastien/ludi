@@ -12,12 +12,14 @@ export interface SetupResult {
   seats: { color: Color; name: string; computer?: BotLevel }[];
   themeId: ThemeId;
   rules: Rules;
+  patois: boolean;
+  competitive: boolean;
   /** What was typed, empty names included, to remember for next time. */
   typed: Partial<Record<Color, string>>;
 }
 
 interface SetupProps {
-  initial: { themeId: ThemeId; rules: Rules; names: Partial<Record<Color, string>> };
+  initial: { themeId: ThemeId; rules: Rules; names: Partial<Record<Color, string>>; patois: boolean; competitive: boolean };
   /** Start with you on St. Elizabeth and three computers, from "Play against the computer". */
   vsComputer?: boolean;
   onBack: () => void;
@@ -44,6 +46,8 @@ const panel = {
 export function Setup({ initial, vsComputer, onBack, onStart }: SetupProps) {
   const [themeId, setThemeId] = useState(initial.themeId);
   const [rules, setRules] = useState(initial.rules);
+  const [patois, setPatois] = useState(initial.patois);
+  const [competitive, setCompetitive] = useState(initial.competitive);
   const [names, setNames] = useState(initial.names);
   // Everyone starts as an empty "Add a player" row (the board comes first), unless playing the computer.
   const [colors, setColors] = useState<Color[]>(vsComputer ? ['red', 'green', 'gold', 'black'] : []);
@@ -93,6 +97,8 @@ export function Setup({ initial, vsComputer, onBack, onStart }: SetupProps) {
       ),
       themeId,
       rules,
+      patois,
+      competitive,
       typed: names,
     });
 
@@ -116,7 +122,7 @@ export function Setup({ initial, vsComputer, onBack, onStart }: SetupProps) {
                 key={id}
                 onClick={() => setThemeId(id)}
                 aria-pressed={on}
-                aria-label={`${t.name} board`}
+                aria-label={`${t.name}${t.badge ? `, ${t.badge}` : ''} board`}
                 style={{
                   position: 'relative',
                   display: 'flex',
@@ -128,14 +134,16 @@ export function Setup({ initial, vsComputer, onBack, onStart }: SetupProps) {
                   cursor: 'pointer',
                   color: ROOTS.ink,
                   textAlign: 'center',
+                  // A special edition gets the whole row.
+                  gridColumn: t.badge ? '1 / -1' : undefined,
                   ...(on
                     ? { background: '#17110D', border: '2.5px solid #E8B21C', boxShadow: '0 0 0 2px rgba(232,178,28,0.25)' }
                     : { background: 'rgba(0,0,0,0.28)', border: '2.5px solid rgba(255,255,255,0.08)', opacity: 0.9 }),
                 }}
               >
-                {t.exclusive && <ExclusiveBadge />}
+                {t.badge && <EditionBadge label={t.badge} />}
                 {/* The real board, empty, so the preview always matches what you play on. */}
-                <div aria-hidden="true" style={{ pointerEvents: 'none' }}>
+                <div aria-hidden="true" style={{ pointerEvents: 'none', width: '100%', maxWidth: t.badge ? 200 : undefined, alignSelf: 'center' }}>
                   <Board theme={t} seats={[]} men={NO_MEN} frame={4} />
                 </div>
                 <div style={{ fontSize: 14, fontWeight: 900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -346,6 +354,24 @@ export function Setup({ initial, vsComputer, onBack, onStart }: SetupProps) {
         </div>
       </section>
 
+      <section style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <SectionLabel>Game style</SectionLabel>
+        <div style={{ ...panel, display: 'flex', flexDirection: 'column' }}>
+          <RuleSwitch
+            name="Patois"
+            desc={patois ? 'Talk like di yard: "Yuh born!", "Dead!", "Mi ready".' : 'Plain English: "Born!", "Killed!", "I\'m ready".'}
+            on={patois}
+            onToggle={() => setPatois(!patois)}
+          />
+          <RuleSwitch
+            name="Competitive"
+            desc="Kill counts, taunts, bounties on men near home, rivalries and end-of-game awards."
+            on={competitive}
+            onToggle={() => setCompetitive(!competitive)}
+          />
+        </div>
+      </section>
+
       {/* Pinned to the bottom so Start is always in reach, even on short phones. */}
       <div
         style={{
@@ -383,7 +409,7 @@ const swatch = {
   flexShrink: 0,
 } as const;
 
-function ExclusiveBadge() {
+function EditionBadge({ label }: { label: string }) {
   return (
     <div
       style={{
@@ -407,7 +433,7 @@ function ExclusiveBadge() {
       <svg width="10" height="10" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M12 2l3 6.5 7 .8-5.2 4.8 1.5 7L12 17.6 5.7 21.1l1.5-7L2 9.3l7-.8z" fill={DARK_INK} />
       </svg>
-      Exclusive
+      {label}
     </div>
   );
 }

@@ -10,6 +10,8 @@ interface Board {
   men: Men;
   seats: Color[];
   rules: Rules;
+  /** Men that killed earlier this roll and can't move again yet. */
+  stuck?: { from: Progress; count: number };
 }
 
 interface Resolution {
@@ -62,7 +64,7 @@ export function createGame(setup: GameSetup): GameState {
 /** Every move the current color may make right now. Empty unless it is the move phase. */
 export function legalMoves(state: GameState): Move[] {
   if (state.status !== 'playing' || state.turn.phase !== 'move') return [];
-  return movesForDice(state, state.turn.color, state.turn.dice);
+  return movesForDice({ ...state, stuck: state.turn.stuck }, state.turn.color, state.turn.dice);
 }
 
 /** All blocks on the main track (two or more men of one color on a square). */
@@ -110,7 +112,7 @@ function roll(state: GameState, dice: number[]): GameState {
   const stats = statsOf(state);
   const next: GameState = {
     ...state,
-    turn: { ...turn, phase: 'move', dice: [...dice], rolled: [...dice], extraRoll: dice.includes(6) },
+    turn: { ...turn, phase: 'move', dice: [...dice], rolled: [...dice], extraRoll: dice.includes(6), stuck: undefined },
     events: [{ type: 'rolled', color: turn.color, dice: [...dice] }],
     stats: {
       ...stats,
@@ -133,7 +135,12 @@ function move(state: GameState, m: Move): GameState {
   let next: GameState = {
     ...state,
     men,
-    turn: { ...state.turn, dice: spendDice(state.turn.dice, m) },
+    // A man who kills stops there: he can't take the other die this roll.
+    turn: {
+      ...state.turn,
+      dice: spendDice(state.turn.dice, m),
+      stuck: res.victims.length > 0 ? { from: res.to, count: res.movers } : state.turn.stuck,
+    },
     events,
     stats: countKills(statsOf(state), events),
   };
@@ -151,7 +158,7 @@ function move(state: GameState, m: Move): GameState {
 /** The dice are spent (or unusable). Roll again on a 6, else pass to the next color. */
 function finishDice(state: GameState): GameState {
   if (state.turn.extraRoll) {
-    return { ...state, turn: { ...state.turn, phase: 'roll', dice: [], rolled: [], extraRoll: false } };
+    return { ...state, turn: { ...state.turn, phase: 'roll', dice: [], rolled: [], extraRoll: false, stuck: undefined } };
   }
   return advance(state);
 }
@@ -211,7 +218,12 @@ function movesForDice(board: Board, color: Color, dice: number[]): Move[] {
   const usesBoth = moves.filter((m) => {
     if (m.kind === 'pair') return true;
     const rest = spendDice(dice, m);
-    const after: Board = { ...board, men: moveMen(board, color, m, resolve(board, color, m)!).men };
+    const res = resolve(board, color, m)!;
+    const after: Board = {
+      ...board,
+      men: moveMen(board, color, m, res).men,
+      stuck: res.victims.length > 0 ? { from: res.to, count: res.movers } : board.stuck,
+    };
     return rawMoves(after, color, rest).length > 0;
   });
   if (usesBoth.length > 0) return usesBoth;
@@ -243,7 +255,8 @@ function rawMoves(board: Board, color: Color, dice: number[]): Move[] {
 function resolve(board: Board, color: Color, m: Move): Resolution | null {
   const movers = m.kind === 'pair' ? 2 : 1;
   if (m.kind === 'pair' && board.rules.diceMode !== 'two') return null;
-  if (m.from === HEAVEN || countAt(board.men[color], m.from) < movers) return null;
+  const stuckHere = board.stuck?.from === m.from ? board.stuck.count : 0;
+  if (m.from === HEAVEN || countAt(board.men[color], m.from) - stuckHere < movers) return null;
 
   let to: Progress;
   if (m.from === YARD) {

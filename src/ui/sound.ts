@@ -78,6 +78,16 @@ export const sfx = {
     noise(0.035, { freq: 1700 + Math.random() * 900, gain });
     noise(0.03, { at: 0.045, freq: 2300 + Math.random() * 900, gain: gain * 0.8 });
   },
+  /** A cap cracking off the board's frame. */
+  clack(power = 1) {
+    noise(0.04, { freq: 2600, gain: 0.35 * power });
+    tone(1400, 0.05, { type: 'square', gain: 0.06 * power, slideTo: 900 });
+  },
+  /** A cap thumping down on the board. */
+  thud(power = 1) {
+    noise(0.1, { freq: 180, gain: 0.8 * power });
+    tone(110, 0.15, { type: 'sine', gain: 0.25 * power, slideTo: 60 });
+  },
   /** One hop of a man moving a square. */
   step() {
     tone(720, 0.05, { type: 'triangle', gain: 0.07 });

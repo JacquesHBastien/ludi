@@ -59,6 +59,11 @@ export interface Turn {
   rolled: number[];
   /** A 6 was rolled, so this color rolls again once the dice are used up. */
   extraRoll: boolean;
+  /**
+   * A man who killed with one die stays put for the rest of this roll: `count` men on `from`
+   * can't move again until the next roll.
+   */
+  stuck?: { from: Progress; count: number };
 }
 
 export interface GameState {

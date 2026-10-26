@@ -12,6 +12,8 @@ interface GameOverProps {
   theme: Theme;
   game: GameState;
   patois: boolean;
+  /** Awards and kill counts only show in competitive games. */
+  competitive: boolean;
   onPlayAgain: () => void;
   onHome: () => void;
   /** Offered when someone has won but two or more players can still play for the other places. */
@@ -21,7 +23,7 @@ interface GameOverProps {
 const AWARD_ICON = { butcher: '☠', ghost: '👻', unlucky: '🪦', sixes: '🎲' } as const;
 
 /** Winner with placings, or the heaven-less draw (GameOver.dc.html). */
-export function GameOver({ theme, game, patois, onPlayAgain, onHome, onKeepPlaying }: GameOverProps) {
+export function GameOver({ theme, game, patois, competitive, onPlayAgain, onHome, onKeepPlaying }: GameOverProps) {
   const draw = game.result?.kind === 'draw';
   const order = ranking(game);
   const winner = seatInfo(theme, order[0]!, game);
@@ -81,14 +83,14 @@ export function GameOver({ theme, game, patois, onPlayAgain, onHome, onKeepPlayi
               </div>
               <div style={{ fontSize: 14, fontWeight: 800, opacity: 0.9, textAlign: 'right' }}>
                 {s.home}/4 home
-                {statsOf(game).kills[c] > 0 && <div style={{ fontSize: 12, opacity: 0.85 }}>☠ {statsOf(game).kills[c]}</div>}
+                {competitive && statsOf(game).kills[c] > 0 && <div style={{ fontSize: 12, opacity: 0.85 }}>☠ {statsOf(game).kills[c]}</div>}
               </div>
             </li>
           );
         })}
       </ol>
 
-      {awards(game, patois).length > 0 && (
+      {competitive && awards(game, patois).length > 0 && (
         <section aria-label="Awards" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
           {awards(game, patois).map((a) => (
             <div

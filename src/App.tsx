@@ -45,7 +45,7 @@ export default function App() {
         vsComputer={vsComputer}
         onBack={() => setScreen('home')}
         onStart={(r: SetupResult) => {
-          setPrefs({ ...prefs, themeId: r.themeId, rules: r.rules, names: r.typed });
+          setPrefs({ ...prefs, themeId: r.themeId, rules: r.rules, names: r.typed, patois: r.patois, competitive: r.competitive });
           start(
             r.seats.map((s) => ({ id: s.color, name: s.name, color: s.color, ...(s.computer ? { computer: s.computer } : {}) })),
             r.rules,
@@ -63,6 +63,8 @@ export default function App() {
         theme={getTheme(prefs.themeId)}
         patois={prefs.patois}
         muted={prefs.muted}
+        competitive={prefs.competitive}
+        onToggleCompetitive={() => setPrefs({ ...prefs, competitive: !prefs.competitive })}
         closeUp={prefs.closeUp}
         onToggleCloseUp={() => setPrefs({ ...prefs, closeUp: !prefs.closeUp })}
         testDice={TEST_DICE}
